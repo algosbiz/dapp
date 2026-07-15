@@ -9,12 +9,32 @@ import { formatToken } from "@/lib/format";
 
 const SWAP_FEE_BPS = 30n;
 const BPS_DENOMINATOR = 10_000n;
+const PRECISION = 10n ** 18n;
+
+/** Swaps above this move the pool price by more than this — requires explicit confirmation. */
+const HIGH_IMPACT_BPS = 1000n; // 10%
+/** Below this, don't even bother showing the impact figure — it's noise. */
+const SHOW_IMPACT_BPS = 10n; // 0.1%
 
 /** Mirrors WethRwdPool.getAmountOut exactly, for an instant client-side preview. */
 function getAmountOut(amountIn: bigint, reserveIn: bigint, reserveOut: bigint): bigint {
   if (amountIn <= 0n || reserveIn <= 0n || reserveOut <= 0n) return 0n;
   const amountInWithFee = amountIn * (BPS_DENOMINATOR - SWAP_FEE_BPS);
   return (amountInWithFee * reserveOut) / (reserveIn * BPS_DENOMINATOR + amountInWithFee);
+}
+
+/**
+ * How much this trade moves the price away from the current spot price, in basis points.
+ * Compares the execution price (amountOut/amountIn) against the pre-trade spot price
+ * (reserveOut/reserveIn) — a large gap means this trade is big relative to the pool's
+ * actual depth, not just "expensive due to fees".
+ */
+function getPriceImpactBps(amountIn: bigint, amountOut: bigint, reserveIn: bigint, reserveOut: bigint): bigint {
+  if (amountIn <= 0n || amountOut <= 0n || reserveIn <= 0n || reserveOut <= 0n) return 0n;
+  const spotPrice = (reserveOut * PRECISION) / reserveIn;
+  const execPrice = (amountOut * PRECISION) / amountIn;
+  if (execPrice >= spotPrice) return 0n;
+  return ((spotPrice - execPrice) * 10_000n) / spotPrice;
 }
 
 const buttonBase =
@@ -28,6 +48,7 @@ export function SwapPanel() {
 
   const [zeroForOne, setZeroForOne] = useState(true); // true = WETH -> RWD
   const [amount, setAmount] = useState("");
+  const [acknowledgedImpact, setAcknowledgedImpact] = useState(false);
 
   const parsedAmountIn = useMemo(() => {
     try {
@@ -43,6 +64,12 @@ export function SwapPanel() {
     return getAmountOut(parsedAmountIn, reserveIn, reserveOut);
   }, [parsedAmountIn, reserveIn, reserveOut]);
 
+  const priceImpactBps = useMemo(() => {
+    if (reserveIn === undefined || reserveOut === undefined || amountOut === undefined) return 0n;
+    return getPriceImpactBps(parsedAmountIn, amountOut, reserveIn, reserveOut);
+  }, [parsedAmountIn, amountOut, reserveIn, reserveOut]);
+  const isHighImpact = priceImpactBps >= HIGH_IMPACT_BPS;
+
   const inTokenAddress = zeroForOne ? CONTRACTS.weth : CONTRACTS.rwdToken;
   const inBalance = zeroForOne ? wethBalance.data : rwdBalance.data;
   const inAllowance = zeroForOne ? wethAllowance.data : rwdAllowance.data;
@@ -54,6 +81,11 @@ export function SwapPanel() {
   }, [inAllowance, parsedAmountIn]);
 
   const isBusy = isPending || isConfirming;
+
+  // A high-impact swap must be re-acknowledged if the amount or direction changes.
+  useEffect(() => {
+    setAcknowledgedImpact(false);
+  }, [amount, zeroForOne]);
 
   useEffect(() => {
     if (isConfirmed) {
@@ -118,7 +150,29 @@ export function SwapPanel() {
           {amountOut !== undefined ? formatToken(amountOut, 6) : "0"}
           <span className="ml-1 text-sm font-semibold text-ink-body">{zeroForOne ? "RWD" : "WETH"}</span>
         </p>
+        {priceImpactBps >= SHOW_IMPACT_BPS && (
+          <p
+            className={`mt-2 text-xs font-semibold ${isHighImpact ? "text-negative-deep" : "text-warning-deep"}`}
+          >
+            Price impact: ~{(Number(priceImpactBps) / 100).toFixed(2)}%
+          </p>
+        )}
       </div>
+
+      {isHighImpact && (
+        <label className="flex items-start gap-2 rounded-control border border-negative/30 bg-negative/5 p-4 text-sm text-negative-deep">
+          <input
+            type="checkbox"
+            checked={acknowledgedImpact}
+            onChange={(e) => setAcknowledgedImpact(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            This trade is large relative to the pool and will move the price by roughly{" "}
+            {(Number(priceImpactBps) / 100).toFixed(2)}%. I understand and want to proceed anyway.
+          </span>
+        </label>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <button
@@ -129,7 +183,13 @@ export function SwapPanel() {
           {isPending ? "Confirm…" : "Approve"}
         </button>
         <button
-          disabled={needsApproval || parsedAmountIn === 0n || !amountOut || isBusy}
+          disabled={
+            needsApproval ||
+            parsedAmountIn === 0n ||
+            !amountOut ||
+            isBusy ||
+            (isHighImpact && !acknowledgedImpact)
+          }
           onClick={() => swap(parsedAmountIn, inTokenAddress, withSlippage(amountOut ?? 0n))}
           className={`${buttonBase} bg-brand text-ink hover:bg-brand-active`}
         >
