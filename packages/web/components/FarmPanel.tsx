@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { useFarmActions, useFarmData } from "@/hooks/useFarm";
+import { useTransactionToast } from "@/hooks/useTransactionToast";
+import { ButtonContent } from "@/components/Spinner";
 import { formatToken } from "@/lib/format";
 
 const buttonBase =
@@ -22,7 +24,9 @@ export function FarmPanel() {
     isConfirming,
     isConfirmed,
     error,
+    reset,
   } = useFarmActions();
+  const { run, activeLabel } = useTransactionToast({ isPending, isConfirming, isConfirmed, error, reset });
 
   const [amount, setAmount] = useState("");
 
@@ -62,7 +66,7 @@ export function FarmPanel() {
         </span>
         <p className="text-lg font-bold text-ink">Connect your wallet to start farming</p>
         <p className="mt-1 text-sm text-ink-body">
-          Deposit WETH into the farm and earn freshly minted RWD every block.
+          Deposit WETH into the farm and earn freshly minted RWD every second.
         </p>
       </div>
     );
@@ -126,56 +130,45 @@ export function FarmPanel() {
       <div className="grid grid-cols-2 gap-3">
         <button
           disabled={!needsApproval || parsedAmount === 0n || isBusy}
-          onClick={() => approve(parsedAmount)}
+          onClick={() => run("Approve", () => approve(parsedAmount))}
           className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
         >
-          {isPending ? "Confirm…" : "Approve"}
+          <ButtonContent busy={activeLabel === "Approve"} label="Approve" busyLabel="Approving…" />
         </button>
         <button
           disabled={needsApproval || parsedAmount === 0n || isBusy}
-          onClick={() => deposit(parsedAmount)}
+          onClick={() => run("Deposit", () => deposit(parsedAmount))}
           className={`${buttonBase} bg-brand text-ink hover:bg-brand-active`}
         >
-          Deposit
+          <ButtonContent busy={activeLabel === "Deposit"} label="Deposit" busyLabel="Depositing…" />
         </button>
         <button
           disabled={parsedAmount === 0n || isBusy || !stakedAmount}
-          onClick={() => withdraw(parsedAmount)}
+          onClick={() => run("Withdraw", () => withdraw(parsedAmount))}
           className={`${buttonBase} border border-ink/20 bg-canvas text-ink hover:border-ink`}
         >
-          Withdraw
+          <ButtonContent busy={activeLabel === "Withdraw"} label="Withdraw" busyLabel="Withdrawing…" />
         </button>
         <button
           disabled={isBusy || !pending.data}
-          onClick={() => harvest()}
+          onClick={() => run("Harvest", () => harvest())}
           className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
         >
-          Harvest
+          <ButtonContent busy={activeLabel === "Harvest"} label="Harvest" busyLabel="Harvesting…" />
         </button>
       </div>
 
       <button
         disabled={isBusy || !stakedAmount}
-        onClick={() => emergencyWithdraw()}
+        onClick={() => run("Emergency withdraw", () => emergencyWithdraw())}
         className={`${buttonBase} w-full border border-negative/30 text-negative-deep hover:border-negative hover:bg-negative/5`}
       >
-        Emergency withdraw (forfeit rewards)
+        <ButtonContent
+          busy={activeLabel === "Emergency withdraw"}
+          label="Emergency withdraw (forfeit rewards)"
+          busyLabel="Withdrawing…"
+        />
       </button>
-
-      {/* Transaction status */}
-      <div className="min-h-[1.25rem] text-sm">
-        {isConfirming && (
-          <p className="flex items-center gap-2 font-semibold text-warning-deep">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="animate-spin" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-            Waiting for confirmation…
-          </p>
-        )}
-        {isConfirmed && <p className="font-semibold text-positive-deep">Transaction confirmed ✓</p>}
-        {error && <p className="line-clamp-2 text-negative-deep">{error.message}</p>}
-      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/Navbar";
@@ -30,6 +31,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1">{children}</main>
           <Footer />
         </Providers>
+        <Toaster
+          position="bottom-right"
+          gap={10}
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast:
+                "flex items-center gap-3 rounded-card bg-canvas px-4 py-3.5 text-sm font-semibold text-ink shadow-card border border-ink/10 w-[356px]",
+              title: "text-ink",
+              icon: "shrink-0",
+              success: "!border-positive/30",
+              error: "!border-negative/30",
+              loading: "!border-ink/10",
+            },
+          }}
+        />
       </body>
     </html>
   );

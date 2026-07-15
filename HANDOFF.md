@@ -150,6 +150,35 @@ the UI's exact formula) — capping the display is standard practice for real De
 a fresh/shallow pool, not a bug workaround. Expect real-looking APRs once staked amounts
 and pool depth grow to non-trivial testnet sizes.
 
+### 8. Toast notifications + per-action button spinners
+
+New this session, applied consistently across all 6 action panels (`StakingPanel`,
+`FarmPanel`, `RwdStakingPanel`, `LpFarmPanel`, `SwapPanel`, `LiquidityPanel`):
+
+- `sonner` added as a dependency (first UI library beyond Tailwind/RainbowKit in this
+  repo). `<Toaster />` mounted once in `app/layout.tsx`, `unstyled` + custom
+  `classNames` so toasts match the Wise theme (`bg-canvas`, `rounded-card`,
+  `shadow-card`) instead of sonner's default look.
+- New `hooks/useTransactionToast.ts`: wraps a wagmi write-contract action's lifecycle
+  (confirm-in-wallet → waiting-for-confirmation → confirmed/error) into one toast that
+  updates in place (same `id`) rather than stacking three separate toasts per action.
+  Also tracks *which* specific action is in flight (`run("Stake", () => stake(amount))`
+  returns an `activeLabel`), since every panel shares one `useWriteContract` instance
+  across several buttons — without this, clicking one button would make all of them
+  look busy.
+- New `components/Spinner.tsx`: `Spinner` (the icon) + `ButtonContent` (swaps a
+  button's label for a spinner + busy-label when `activeLabel` matches that button).
+- The old inline "Waiting for confirmation…/Transaction confirmed ✓/error" paragraph
+  block at the bottom of each panel was removed — toasts now own that feedback,
+  avoiding duplicated UI for the same event. Error toasts still show the full wagmi
+  error message (truncated at 140 chars).
+- `app/globals.css` gained a `prefers-reduced-motion` override (spinner + any future
+  CSS animation reduces to near-instant for users who need it) — didn't exist before.
+- Verified end-to-end in-browser on `/pool` (the one page where the automation
+  session's wallet was actually connected): clicked Approve → button showed a spinner
+  + "Approving…", toast progressed "confirm in your wallet…" → "Approve confirmed";
+  same for Swap. Full lifecycle confirmed working, not just typechecked.
+
 ## Repo is now on GitHub
 
 `git init` + initial commit + push done this session. Remote: `origin` →

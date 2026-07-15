@@ -5,6 +5,8 @@ import { parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { CONTRACTS } from "@/config/contracts";
 import { SLIPPAGE_BPS, useWethRwdPoolActions, useWethRwdPoolData, withSlippage } from "@/hooks/useWethRwdPool";
+import { useTransactionToast } from "@/hooks/useTransactionToast";
+import { ButtonContent } from "@/components/Spinner";
 import { formatToken } from "@/lib/format";
 
 const SWAP_FEE_BPS = 30n;
@@ -43,8 +45,9 @@ const buttonBase =
 export function SwapPanel() {
   const { isConnected } = useAccount();
   const { reserve0, reserve1, wethBalance, rwdBalance, wethAllowance, rwdAllowance } = useWethRwdPoolData();
-  const { approveToken0, approveToken1, swap, isPending, isConfirming, isConfirmed, error } =
+  const { approveToken0, approveToken1, swap, isPending, isConfirming, isConfirmed, error, reset } =
     useWethRwdPoolActions();
+  const { run, activeLabel } = useTransactionToast({ isPending, isConfirming, isConfirmed, error, reset });
 
   const [zeroForOne, setZeroForOne] = useState(true); // true = WETH -> RWD
   const [amount, setAmount] = useState("");
@@ -177,10 +180,10 @@ export function SwapPanel() {
       <div className="grid grid-cols-2 gap-3">
         <button
           disabled={!needsApproval || parsedAmountIn === 0n || isBusy}
-          onClick={() => approveIn(parsedAmountIn)}
+          onClick={() => run("Approve", () => approveIn(parsedAmountIn))}
           className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
         >
-          {isPending ? "Confirm…" : "Approve"}
+          <ButtonContent busy={activeLabel === "Approve"} label="Approve" busyLabel="Approving…" />
         </button>
         <button
           disabled={
@@ -190,17 +193,11 @@ export function SwapPanel() {
             isBusy ||
             (isHighImpact && !acknowledgedImpact)
           }
-          onClick={() => swap(parsedAmountIn, inTokenAddress, withSlippage(amountOut ?? 0n))}
+          onClick={() => run("Swap", () => swap(parsedAmountIn, inTokenAddress, withSlippage(amountOut ?? 0n)))}
           className={`${buttonBase} bg-brand text-ink hover:bg-brand-active`}
         >
-          Swap
+          <ButtonContent busy={activeLabel === "Swap"} label="Swap" busyLabel="Swapping…" />
         </button>
-      </div>
-
-      <div className="min-h-[1.25rem] text-sm">
-        {isConfirming && <p className="font-semibold text-warning-deep">Waiting for confirmation…</p>}
-        {isConfirmed && <p className="font-semibold text-positive-deep">Transaction confirmed ✓</p>}
-        {error && <p className="line-clamp-2 text-negative-deep">{error.message}</p>}
       </div>
     </div>
   );

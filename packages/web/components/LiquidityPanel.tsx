@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { useWethRwdPoolActions, useWethRwdPoolData, withSlippage } from "@/hooks/useWethRwdPool";
+import { useTransactionToast } from "@/hooks/useTransactionToast";
+import { ButtonContent } from "@/components/Spinner";
 import { formatToken } from "@/lib/format";
 
 const buttonBase =
@@ -38,7 +40,9 @@ export function LiquidityPanel() {
     isConfirming,
     isConfirmed,
     error,
+    reset,
   } = useWethRwdPoolActions();
+  const { run, activeLabel } = useTransactionToast({ isPending, isConfirming, isConfirmed, error, reset });
 
   const [amount0Str, setAmount0Str] = useState("");
   const [amount1Str, setAmount1Str] = useState("");
@@ -149,28 +153,30 @@ export function LiquidityPanel() {
         <div className="grid grid-cols-3 gap-2">
           <button
             disabled={!needsApproval0 || amount0 === 0n || isBusy}
-            onClick={() => approveToken0(amount0)}
+            onClick={() => run("Approve WETH", () => approveToken0(amount0))}
             className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
           >
-            Approve WETH
+            <ButtonContent busy={activeLabel === "Approve WETH"} label="Approve WETH" busyLabel="Approving…" />
           </button>
           <button
             disabled={!needsApproval1 || amount1 === 0n || isBusy}
-            onClick={() => approveToken1(amount1)}
+            onClick={() => run("Approve RWD", () => approveToken1(amount1))}
             className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
           >
-            Approve RWD
+            <ButtonContent busy={activeLabel === "Approve RWD"} label="Approve RWD" busyLabel="Approving…" />
           </button>
           <button
             disabled={
               needsApproval0 || needsApproval1 || amount0 === 0n || amount1 === 0n || isBusy
             }
             onClick={() =>
-              addLiquidity(amount0, amount1, withSlippage(amount0), withSlippage(amount1))
+              run("Add liquidity", () =>
+                addLiquidity(amount0, amount1, withSlippage(amount0), withSlippage(amount1))
+              )
             }
             className={`${buttonBase} bg-brand text-ink hover:bg-brand-active`}
           >
-            Add
+            <ButtonContent busy={activeLabel === "Add liquidity"} label="Add" busyLabel="Adding…" />
           </button>
         </div>
       </div>
@@ -223,22 +229,18 @@ export function LiquidityPanel() {
         <button
           disabled={removeAmount === 0n || isBusy}
           onClick={() =>
-            removeLiquidity(
-              removeAmount,
-              withSlippage(removePreview?.amount0 ?? 0n),
-              withSlippage(removePreview?.amount1 ?? 0n)
+            run("Remove liquidity", () =>
+              removeLiquidity(
+                removeAmount,
+                withSlippage(removePreview?.amount0 ?? 0n),
+                withSlippage(removePreview?.amount1 ?? 0n)
+              )
             )
           }
           className={`${buttonBase} w-full border border-ink/20 bg-canvas text-ink hover:border-ink`}
         >
-          Remove
+          <ButtonContent busy={activeLabel === "Remove liquidity"} label="Remove" busyLabel="Removing…" />
         </button>
-      </div>
-
-      <div className="lg:col-span-2 min-h-[1.25rem] text-sm">
-        {isConfirming && <p className="font-semibold text-warning-deep">Waiting for confirmation…</p>}
-        {isConfirmed && <p className="font-semibold text-positive-deep">Transaction confirmed ✓</p>}
-        {error && <p className="line-clamp-2 text-negative-deep">{error.message}</p>}
       </div>
     </div>
   );
