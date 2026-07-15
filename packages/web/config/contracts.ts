@@ -30,6 +30,11 @@ export const CONTRACTS = {
     process.env.NEXT_PUBLIC_RWD_STAKING_ADDRESS,
     "NEXT_PUBLIC_RWD_STAKING_ADDRESS"
   ),
+  // WETH/RWD constant-product AMM pool (read-only display for now).
+  wethRwdPool: requireAddress(
+    process.env.NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS,
+    "NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS"
+  ),
 };
 
 /** WETH is seeded as pool 0 by scripts/deploy-masterchef.ts. */

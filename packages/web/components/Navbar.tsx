@@ -26,6 +26,9 @@ export function Navbar() {
           <Link href="/stake-rwd" className="transition-colors hover:text-ink">
             Stake RWD
           </Link>
+          <Link href="/pool" className="transition-colors hover:text-ink">
+            Pool
+          </Link>
           <Link href="/#security" className="transition-colors hover:text-ink">
             Security
           </Link>

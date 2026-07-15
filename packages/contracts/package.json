@@ -15,6 +15,9 @@
     "deploy:rwd-pool:localhost": "hardhat run scripts/deploy-rwd-pool.ts --network localhost",
     "deploy:rwd-pool:robinhood-testnet": "hardhat run scripts/deploy-rwd-pool.ts --network robinhoodTestnet",
     "deploy:rwd-pool:robinhood": "hardhat run scripts/deploy-rwd-pool.ts --network robinhood",
+    "deploy:weth-rwd-pool:localhost": "hardhat run scripts/deploy-weth-rwd-pool.ts --network localhost",
+    "deploy:weth-rwd-pool:robinhood-testnet": "hardhat run scripts/deploy-weth-rwd-pool.ts --network robinhoodTestnet",
+    "deploy:weth-rwd-pool:robinhood": "hardhat run scripts/deploy-weth-rwd-pool.ts --network robinhood",
     "snapshot:robinhood-testnet": "hardhat run scripts/snapshot-supply.ts --network robinhoodTestnet",
     "verify:robinhood-testnet": "hardhat verify --network robinhoodTestnet",
     "verify:robinhood": "hardhat verify --network robinhood"
