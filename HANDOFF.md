@@ -84,6 +84,20 @@ automation (separate extension window, outside the tracked tab), so on-chain cor
 was confirmed via a Hardhat script replicating the exact calldata the UI builds, plus the
 UI's live preview math checked by hand against the deployed contract's reserves.
 
+**⚠️ Pool is currently badly imbalanced (2026-07-15, real user action, not a bug):** the
+user swapped 5 RWD into the pool via the real UI — enormous relative to the ~0.002 RWD of
+actual liquidity at the time — which drained ~99.96% of the WETH reserve (constant-product
+math working exactly as designed against a very shallow pool). Current reserves are
+roughly **0.0000002 WETH / 5.002 RWD**, spot price ~24,000,000 RWD/WETH. Not fixed —
+left as-is since it's testnet with no real value; if this needs to look sane for a demo,
+either seed a fresh, much larger pool, or add enough WETH-heavy liquidity to rebalance it.
+
+**Fix added after that incident:** `SwapPanel.tsx` now computes price impact
+(execution price vs. pre-trade spot price) and shows a warning once it exceeds 0.1%;
+at ≥10% impact the warning turns red and the Swap button is gated behind an explicit
+"I understand and want to proceed anyway" checkbox. This is exactly the guard that was
+missing when the incident above happened.
+
 ### 6. LP Farm (bottom of `/farm`) — stake `WETH-RWD-LP` to earn RWD
 
 New this session. `masterChef.add(1000, wethRwdPoolAddress, true)` created **pid 1**
