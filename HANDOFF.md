@@ -70,9 +70,45 @@ permanently stuck at the dead address `0x…dEaD`). This is irreversible — nob
 including the team, can ever withdraw that liquidity. The pool remains fully functional
 for any future LP; only the founder's burned share is gone forever.
 
-**Web is read-only for now** — `/pool` shows live reserves + spot price only. No
-swap/add-liquidity UI yet (explicitly deferred — validate the contract in the wild
-first). All 35 contract tests pass (`test/WethRwdPool.test.ts`, 19 new cases).
+All 35 contract tests pass (`test/WethRwdPool.test.ts`, 19 cases).
+
+**Swap + add/remove-liquidity UI (2026-07-15, later same day):** `/pool` now has
+`SwapPanel.tsx` (direction toggle, client-side live preview mirroring
+`getAmountOut`'s exact formula, 0.5% fixed slippage tolerance — not user-configurable
+yet) and `LiquidityPanel.tsx` (two-token add with ratio-assist auto-fill from current
+reserves, single-input remove with live payout preview, no approval needed to remove
+since it burns the caller's own LP balance directly). Verified on-chain via a scripted
+swap (0.00002 WETH → RWD) — reserves and the `k` invariant updated exactly as computed
+client-side. MetaMask's own confirmation popup can't be driven by this session's browser
+automation (separate extension window, outside the tracked tab), so on-chain correctness
+was confirmed via a Hardhat script replicating the exact calldata the UI builds, plus the
+UI's live preview math checked by hand against the deployed contract's reserves.
+
+### 6. LP Farm (bottom of `/farm`) — stake `WETH-RWD-LP` to earn RWD
+
+New this session. `masterChef.add(1000, wethRwdPoolAddress, true)` created **pid 1**
+(`WETH-RWD-LP` as the staking token), `allocPoint` equal to pid 0 (WETH) — a 50/50
+emission split between direct WETH staking and LP staking, adjustable later via
+`masterChef.set(pid, allocPoint, true)`. No contract changes needed —
+`deposit`/`withdraw`/`pendingReward`/`userInfo` already took an arbitrary `pid`.
+
+`hooks/useFarm.ts` was generalized with optional `pid`/`stakingToken` parameters
+(defaulting to the original pid-0/WETH values, so `FarmPanel.tsx`/`FarmDashboard.tsx`
+are unchanged) rather than duplicated — this is the same underlying MasterChef
+integration with different args, unlike `/stake` vs `/stake-rwd` (genuinely different
+deployed contracts, where duplication was the right call). New
+`LpFarmDashboard.tsx`/`LpFarmPanel.tsx` call the parameterized hooks with
+`(FARM_LP_PID, CONTRACTS.wethRwdPool)`.
+
+Verified on-chain via script: staked 19 wei of LP into pid 1, `pendingReward` climbed
+to 0.045 RWD after ~8s (≈ 0.005 RWD/sec = 50% of the 0.01 RWD/sec farm-wide rate,
+matching the 50/50 allocPoint split exactly).
+
+**Note on tiny numbers:** LP token amounts can be extremely small after the founding
+burn (each remaining LP token unit represents a large share of pooled value once
+`totalSupply` is down near `MINIMUM_LIQUIDITY`). The UI shows LP balances in **raw
+units**, not `formatToken`-formatted ether, since amounts like `19` wei would just
+round to "0" at 4 decimal places and look broken otherwise.
 
 ## Repo is now on GitHub
 
@@ -90,7 +126,7 @@ end, then push succeeded.
 
 | What | Address |
 |---|---|
-| MasterChef (current — per-second + `ownerMint`) | `0x6E530044df48cFfa245aA2b1102AfF5D9c4e02E6` |
+| MasterChef (current — per-second + `ownerMint`; pid 0 = WETH, pid 1 = WETH-RWD-LP) | `0x6E530044df48cFfa245aA2b1102AfF5D9c4e02E6` |
 | RewardToken / RWD (current, farm's mint-on-demand token) | `0x3e71e09aF9278ed68d5D12df8edb2Ae1b69f8666` |
 | Stake-RWD pool (WethStakingRewards, RWD↔RWD) | `0x0Fb2421c5BB75c4eE883Dd76725dbbEBEdfb72ea` |
 | WethRwdPool (AMM, LP token `WETH-RWD-LP`, founding liquidity burned) | `0x6b9929D2cb7037C2d637cDb01540384a1aE00B4c` |
@@ -115,19 +151,16 @@ and `snapshot-supply.ts`; do NOT confuse with `REWARDS_TOKEN_ADDRESS`, which is 
 `NEXT_PUBLIC_RWD_TOKEN_ADDRESS`, `NEXT_PUBLIC_RWD_STAKING_ADDRESS`,
 `NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS`. **Do not print the private key.**
 
-## Deferred (not built) — swap/add-liquidity UI, LP farming pool, price oracle
+## Deferred (not built) — price oracle, configurable slippage
 
-The AMM contract (`WethRwdPool.sol`) is deployed and live, but three follow-on pieces from
-the original whiteboard are still not built, deliberately deferred until the contract has
-been validated in the wild:
-- A swap/add-liquidity UI (currently `/pool` is read-only reserves/price display only).
-- An LP-farming pool (stake the `WETH-RWD-LP` token in a MasterChef-style pool to earn RWD
-  — this was whiteboard item "weth/RWD LP for RWD"). Note: this would NOT hit the same
-  balance-comingling issue that ruled out staking RWD itself in MasterChef (see the
-  RWD-for-RWD section above) — LP tokens are a distinct ERC20 from RWD, so a MasterChef
-  pool for `WETH-RWD-LP` is safe to add later.
+Everything from the original whiteboard is now built. Two smaller items remain
+deliberately deferred, both low priority until something actually needs them:
 - Any TWAP/price-oracle mechanism (current spot price is a raw reserve ratio, manipulable
   by a large single swap — fine for display, not safe for anything else to depend on).
+  Nothing in this repo consumes a price feed yet.
+- User-configurable slippage tolerance on swap/add-liquidity (currently a fixed 0.5%
+  constant in `hooks/useWethRwdPool.ts` — `SLIPPAGE_BPS`). Easy to expose as a setting
+  later; not built now to keep the first UI pass simple.
 
 ## Project shape
 
@@ -144,16 +177,19 @@ skill (see the user memory). The impeccable design hook is active and scans UI f
   `scripts/deploy-rwd-pool.ts`, `scripts/deploy-weth-rwd-pool.ts`, `scripts/snapshot-supply.ts`.
 - Tests: `test/MasterChef.test.ts` (7), `test/WethRwdPool.test.ts` (19),
   `test/WethStakingRewards.test.ts` (9) — 35 total.
-- Web farm: `app/farm/page.tsx`, `components/{FarmPanel,FarmDashboard,SupplyPanel}.tsx`,
-  `hooks/useFarm.ts`, `abi/masterChef.ts`.
+- Web farm: `app/farm/page.tsx`, `components/{FarmPanel,FarmDashboard,LpFarmPanel,
+  LpFarmDashboard,SupplyPanel}.tsx`, `hooks/useFarm.ts` (generalized with optional
+  `pid`/`stakingToken` params — pid 0/WETH is the default), `abi/masterChef.ts`.
+- Web pool: `app/pool/page.tsx`, `components/{PoolPanel,SwapPanel,LiquidityPanel}.tsx`,
+  `hooks/useWethRwdPool.ts` (also exports `SLIPPAGE_BPS`/`withSlippage`),
+  `abi/wethRwdPool.ts`.
 - Web RWD staking: `app/stake-rwd/page.tsx`, `components/RwdStaking{Panel,Dashboard}.tsx`,
   `hooks/useRwdStaking.ts` (reuses `abi/wethStakingRewards.ts` + `abi/erc20.ts`, no new ABI).
 - Web WETH staking: `app/stake/page.tsx`, `components/{StakingPanel,Dashboard}.tsx`,
   `hooks/useStaking.ts`.
-- Web pool (read-only): `app/pool/page.tsx`, `components/PoolPanel.tsx`,
-  `hooks/useWethRwdPool.ts`, `abi/wethRwdPool.ts`.
 - Shared config: `config/contracts.ts` (`weth`, `stakingRewards`, `rewardsToken`,
-  `masterChef`, `rwdToken`, `rwdStaking`, `wethRwdPool`), `config/chains.ts`.
+  `masterChef`, `rwdToken`, `rwdStaking`, `wethRwdPool`, `FARM_PID`, `FARM_LP_PID`),
+  `config/chains.ts`.
 - Landing: `app/page.tsx`, `components/landing/{Hero,Steps,Guarantees,CtaBand}.tsx`,
   `components/Footer.tsx`, `components/Navbar.tsx` (now has Stake / Farm / Stake RWD / Pool /
   Security links). Theme tokens: `tailwind.config.ts`, `app/globals.css`, `app/layout.tsx`.

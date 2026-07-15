@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { LiquidityPanel } from "@/components/LiquidityPanel";
 import { PoolPanel } from "@/components/PoolPanel";
+import { SwapPanel } from "@/components/SwapPanel";
 
 export const metadata = {
   title: "WETH/RWD Pool | WETH Staking",
@@ -25,13 +27,14 @@ export default function PoolPage() {
         <p className="mt-2 text-pretty text-base leading-relaxed text-ink-body">
           A constant-product liquidity pool giving RWD a market price. The founding
           liquidity was permanently burned — nobody, including the team, can ever
-          withdraw it. Swapping and adding liquidity aren't available in the app yet;
-          this page shows live pool reserves and the current spot price.
+          withdraw it.
         </p>
       </header>
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-6">
         <PoolPanel />
+        <SwapPanel />
+        <LiquidityPanel />
       </div>
     </div>
   );

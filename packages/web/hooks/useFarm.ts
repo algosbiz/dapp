@@ -5,12 +5,17 @@ import { erc20Abi } from "@/abi/erc20";
 import { masterChefAbi } from "@/abi/masterChef";
 import { CONTRACTS, FARM_PID } from "@/config/contracts";
 
-/** Read-only farm data for the connected wallet + the WETH pool (pid 0). */
-export function useFarmData() {
+/**
+ * Read-only farm data for the connected wallet + a given MasterChef pool. Defaults to
+ * pid 0 / WETH (the original pool) so existing callers are unaffected; pass a different
+ * pid + stakingToken to read another pool on the same MasterChef contract (e.g. the LP
+ * farming pool).
+ */
+export function useFarmData(pid: bigint = FARM_PID, stakingToken: `0x${string}` = CONTRACTS.weth) {
   const { address } = useAccount();
 
   const wethBalance = useReadContract({
-    address: CONTRACTS.weth,
+    address: stakingToken,
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
@@ -18,16 +23,16 @@ export function useFarmData() {
   });
 
   const allowance = useReadContract({
-    address: CONTRACTS.weth,
+    address: stakingToken,
     abi: erc20Abi,
     functionName: "allowance",
     args: address ? [address, CONTRACTS.masterChef] : undefined,
     query: { enabled: Boolean(address) },
   });
 
-  // TVL for the pool = WETH held by the MasterChef.
+  // TVL for the pool = staking token held by the MasterChef.
   const poolStaked = useReadContract({
-    address: CONTRACTS.weth,
+    address: stakingToken,
     abi: erc20Abi,
     functionName: "balanceOf",
     args: [CONTRACTS.masterChef],
@@ -38,7 +43,7 @@ export function useFarmData() {
     address: CONTRACTS.masterChef,
     abi: masterChefAbi,
     functionName: "userInfo",
-    args: address ? [FARM_PID, address] : undefined,
+    args: address ? [pid, address] : undefined,
     query: { enabled: Boolean(address) },
   });
 
@@ -46,7 +51,7 @@ export function useFarmData() {
     address: CONTRACTS.masterChef,
     abi: masterChefAbi,
     functionName: "pendingReward",
-    args: address ? [FARM_PID, address] : undefined,
+    args: address ? [pid, address] : undefined,
     query: { enabled: Boolean(address), refetchInterval: 10_000 },
   });
 
@@ -63,13 +68,13 @@ export function useFarmData() {
 }
 
 /** Farm write actions (approve/deposit/withdraw/harvest/emergency) with shared tx status. */
-export function useFarmActions() {
+export function useFarmActions(pid: bigint = FARM_PID, stakingToken: `0x${string}` = CONTRACTS.weth) {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
   const approve = (amount: bigint) =>
     writeContract({
-      address: CONTRACTS.weth,
+      address: stakingToken,
       abi: erc20Abi,
       functionName: "approve",
       args: [CONTRACTS.masterChef, amount],
@@ -80,7 +85,7 @@ export function useFarmActions() {
       address: CONTRACTS.masterChef,
       abi: masterChefAbi,
       functionName: "deposit",
-      args: [FARM_PID, amount],
+      args: [pid, amount],
     });
 
   const withdraw = (amount: bigint) =>
@@ -88,7 +93,7 @@ export function useFarmActions() {
       address: CONTRACTS.masterChef,
       abi: masterChefAbi,
       functionName: "withdraw",
-      args: [FARM_PID, amount],
+      args: [pid, amount],
     });
 
   // Harvesting is a zero-amount deposit — it pays out pending rewards only.
@@ -97,7 +102,7 @@ export function useFarmActions() {
       address: CONTRACTS.masterChef,
       abi: masterChefAbi,
       functionName: "deposit",
-      args: [FARM_PID, 0n],
+      args: [pid, 0n],
     });
 
   const emergencyWithdraw = () =>
@@ -105,7 +110,7 @@ export function useFarmActions() {
       address: CONTRACTS.masterChef,
       abi: masterChefAbi,
       functionName: "emergencyWithdraw",
-      args: [FARM_PID],
+      args: [pid],
     });
 
   return {

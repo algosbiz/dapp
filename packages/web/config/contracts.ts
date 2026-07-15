@@ -30,7 +30,8 @@ export const CONTRACTS = {
     process.env.NEXT_PUBLIC_RWD_STAKING_ADDRESS,
     "NEXT_PUBLIC_RWD_STAKING_ADDRESS"
   ),
-  // WETH/RWD constant-product AMM pool (read-only display for now).
+  // WETH/RWD constant-product AMM pool. Also the WETH-RWD-LP token, and (once added)
+  // the staking token for the LP-farming MasterChef pool.
   wethRwdPool: requireAddress(
     process.env.NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS,
     "NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS"
@@ -39,3 +40,5 @@ export const CONTRACTS = {
 
 /** WETH is seeded as pool 0 by scripts/deploy-masterchef.ts. */
 export const FARM_PID = 0n;
+/** WETH-RWD-LP is added as pool 1 — stake LP tokens to earn RWD. */
+export const FARM_LP_PID = 1n;

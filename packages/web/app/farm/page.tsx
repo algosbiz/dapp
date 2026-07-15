@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { FarmDashboard } from "@/components/FarmDashboard";
 import { FarmPanel } from "@/components/FarmPanel";
+import { LpFarmDashboard } from "@/components/LpFarmDashboard";
+import { LpFarmPanel } from "@/components/LpFarmPanel";
 import { SupplyPanel } from "@/components/SupplyPanel";
 
 export const metadata = {
@@ -36,6 +38,24 @@ export default function FarmPage() {
       <div className="mt-8 space-y-6">
         <FarmDashboard />
         <FarmPanel />
+
+        <div>
+          <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">
+            LP farm
+          </h2>
+          <p className="mt-1 text-sm text-ink-body">
+            Stake WETH-RWD-LP tokens (from adding liquidity on the{" "}
+            <Link href="/pool" className="font-semibold text-positive hover:text-positive-deep">
+              Pool page
+            </Link>
+            ) to earn RWD from the same farm.
+          </p>
+          <div className="mt-4 space-y-6">
+            <LpFarmDashboard />
+            <LpFarmPanel />
+          </div>
+        </div>
+
         <div>
           <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">
             RWD supply
