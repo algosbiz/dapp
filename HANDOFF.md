@@ -124,6 +124,32 @@ burn (each remaining LP token unit represents a large share of pooled value once
 units**, not `formatToken`-formatted ether, since amounts like `19` wei would just
 round to "0" at 4 decimal places and look broken otherwise.
 
+### 7. APR displays — last unchecked whiteboard item, closed out
+
+New `packages/web/lib/apr.ts`: three pure functions (`computeAnnualPoolReward`,
+`convertByPoolPrice`, `computeAprPercent`), no on-chain calls, just arithmetic on values
+the dashboards already fetch. Everything is converted into a common unit (WETH-equivalent)
+using the `/pool` spot price before dividing, so **no USD price feed is needed anywhere** —
+that's what makes this possible now (RWD only got a price once the AMM pool existed).
+
+APR shown on:
+- **Farm - WETH pool** (`FarmDashboard.tsx`): RWD price from `/pool` reserves.
+- **Farm - LP pool** (`LpFarmDashboard.tsx`): same RWD price, LP token valued via
+  `2 * reserve0 / totalSupply` (a balanced pool's total value in WETH terms).
+- **Stake RWD** (`RwdStakingDashboard.tsx`): same-currency APR (`rewardRate * seconds/year
+  / totalStaked`), no price conversion needed since both sides are RWD.
+- **NOT shown on `/stake`** (WETH→tRWD) — tRWD has no price discovery anywhere in this
+  app, so any APR number there would be fabricated. Deliberately left alone.
+
+**Display cap:** `formatAprDisplay()` caps anything over 10,000% to `">10,000%"` rather
+than printing the literal number. This isn't cosmetic — the math is correct, but on this
+testnet the emission rate (`0.01 RWD/sec`) was sized for a meaningfully-large pool, while
+actual staked/pooled amounts are fractions of a token. Priced through the AMM, that
+genuinely computes to billions of percent (confirmed by an independent script matching
+the UI's exact formula) — capping the display is standard practice for real DeFi UIs on
+a fresh/shallow pool, not a bug workaround. Expect real-looking APRs once staked amounts
+and pool depth grow to non-trivial testnet sizes.
+
 ## Repo is now on GitHub
 
 `git init` + initial commit + push done this session. Remote: `origin` →
@@ -204,6 +230,9 @@ skill (see the user memory). The impeccable design hook is active and scans UI f
 - Shared config: `config/contracts.ts` (`weth`, `stakingRewards`, `rewardsToken`,
   `masterChef`, `rwdToken`, `rwdStaking`, `wethRwdPool`, `FARM_PID`, `FARM_LP_PID`),
   `config/chains.ts`.
+- APR math: `lib/apr.ts` (`computeAnnualPoolReward`, `convertByPoolPrice`,
+  `computeAprPercent`, `formatAprDisplay`) — pure functions, no on-chain calls, used by
+  `FarmDashboard.tsx`/`LpFarmDashboard.tsx`/`RwdStakingDashboard.tsx`.
 - Landing: `app/page.tsx`, `components/landing/{Hero,Steps,Guarantees,CtaBand}.tsx`,
   `components/Footer.tsx`, `components/Navbar.tsx` (now has Stake / Farm / Stake RWD / Pool /
   Security links). Theme tokens: `tailwind.config.ts`, `app/globals.css`, `app/layout.tsx`.

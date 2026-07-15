@@ -29,3 +29,12 @@ export function formatTokenSmart(value: bigint | undefined): string {
   }
   return num.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
+
+/**
+ * Formats a percentage value (e.g. 12.34 -> "12.34%"). Returns an em dash for undefined,
+ * NaN, or non-finite values so a missing price/zero-TVL case never prints "NaN%" or "Infinity%".
+ */
+export function formatPercent(value: number | undefined, digits = 2): string {
+  if (value === undefined || !Number.isFinite(value)) return "—";
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits })}%`;
+}

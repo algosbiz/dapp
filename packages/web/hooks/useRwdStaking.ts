@@ -52,7 +52,13 @@ export function useRwdStakingData() {
     query: { enabled: Boolean(address), refetchInterval: 15_000 },
   });
 
-  return { rwdBalance, allowance, stakedBalance, totalStaked, earned };
+  const rewardRate = useReadContract({
+    address: CONTRACTS.rwdStaking,
+    abi: wethStakingRewardsAbi,
+    functionName: "rewardRate",
+  });
+
+  return { rwdBalance, allowance, stakedBalance, totalStaked, earned, rewardRate };
 }
 
 /** Write actions (approve/stake/withdraw/claim/exit) with shared tx status tracking. */

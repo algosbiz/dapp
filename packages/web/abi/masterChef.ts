@@ -65,6 +65,18 @@ export const masterChefAbi = [
   },
   {
     type: "function",
+    name: "poolInfo",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [
+      { name: "lpToken", type: "address" },
+      { name: "allocPoint", type: "uint256" },
+      { name: "lastRewardTime", type: "uint256" },
+      { name: "accRewardPerShare", type: "uint256" },
+    ],
+  },
+  {
+    type: "function",
     name: "poolLength",
     stateMutability: "view",
     inputs: [],

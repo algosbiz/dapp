@@ -61,10 +61,35 @@ export function useFarmData(pid: bigint = FARM_PID, stakingToken: `0x${string}` 
     functionName: "rewardPerSecond",
   });
 
-  // userInfo returns a tuple [amount, rewardDebt].
-  const stakedAmount = userInfo.data ? userInfo.data[0] : undefined;
+  const poolInfo = useReadContract({
+    address: CONTRACTS.masterChef,
+    abi: masterChefAbi,
+    functionName: "poolInfo",
+    args: [pid],
+  });
 
-  return { wethBalance, allowance, poolStaked, userInfo, stakedAmount, pending, rewardPerSecond };
+  const totalAllocPoint = useReadContract({
+    address: CONTRACTS.masterChef,
+    abi: masterChefAbi,
+    functionName: "totalAllocPoint",
+  });
+
+  // userInfo returns a tuple [amount, rewardDebt]; poolInfo returns [lpToken, allocPoint, lastRewardTime, accRewardPerShare].
+  const stakedAmount = userInfo.data ? userInfo.data[0] : undefined;
+  const allocPoint = poolInfo.data ? poolInfo.data[1] : undefined;
+
+  return {
+    wethBalance,
+    allowance,
+    poolStaked,
+    userInfo,
+    stakedAmount,
+    pending,
+    rewardPerSecond,
+    poolInfo,
+    allocPoint,
+    totalAllocPoint,
+  };
 }
 
 /** Farm write actions (approve/deposit/withdraw/harvest/emergency) with shared tx status. */
