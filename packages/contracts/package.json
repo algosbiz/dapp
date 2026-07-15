@@ -1,0 +1,32 @@
+{
+  "name": "@robinhood-staking/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:localhost": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:robinhood-testnet": "hardhat run scripts/deploy-testnet.ts --network robinhoodTestnet",
+    "deploy:robinhood": "hardhat run scripts/deploy.ts --network robinhood",
+    "deploy:masterchef:localhost": "hardhat run scripts/deploy-masterchef.ts --network localhost",
+    "deploy:masterchef:robinhood-testnet": "hardhat run scripts/deploy-masterchef.ts --network robinhoodTestnet",
+    "deploy:masterchef:robinhood": "hardhat run scripts/deploy-masterchef.ts --network robinhood",
+    "deploy:rwd-pool:localhost": "hardhat run scripts/deploy-rwd-pool.ts --network localhost",
+    "deploy:rwd-pool:robinhood-testnet": "hardhat run scripts/deploy-rwd-pool.ts --network robinhoodTestnet",
+    "deploy:rwd-pool:robinhood": "hardhat run scripts/deploy-rwd-pool.ts --network robinhood",
+    "snapshot:robinhood-testnet": "hardhat run scripts/snapshot-supply.ts --network robinhoodTestnet",
+    "verify:robinhood-testnet": "hardhat verify --network robinhoodTestnet",
+    "verify:robinhood": "hardhat verify --network robinhood"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
+  }
+}
