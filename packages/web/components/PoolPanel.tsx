@@ -1,7 +1,7 @@
 "use client";
 
 import { useWethRwdPoolData } from "@/hooks/useWethRwdPool";
-import { formatToken } from "@/lib/format";
+import { formatTokenSmart } from "@/lib/format";
 
 export function PoolPanel() {
   const { reserve0, reserve1 } = useWethRwdPoolData();
@@ -16,19 +16,19 @@ export function PoolPanel() {
       <div className="rounded-card bg-canvas p-6 shadow-card">
         <p className="text-sm font-semibold text-ink-body">WETH in pool</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatToken(reserve0)} <span className="text-lg font-semibold text-ink-body">WETH</span>
+          {formatTokenSmart(reserve0)} <span className="text-lg font-semibold text-ink-body">WETH</span>
         </p>
       </div>
       <div className="rounded-card bg-canvas p-6 shadow-card">
         <p className="text-sm font-semibold text-ink-body">RWD in pool</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatToken(reserve1)} <span className="text-lg font-semibold text-ink-body">RWD</span>
+          {formatTokenSmart(reserve1)} <span className="text-lg font-semibold text-ink-body">RWD</span>
         </p>
       </div>
       <div className="rounded-card bg-canvas p-6 shadow-card">
         <p className="text-sm font-semibold text-ink-body">Spot price</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatToken(spotPrice)} <span className="text-lg font-semibold text-ink-body">RWD / WETH</span>
+          {formatTokenSmart(spotPrice)} <span className="text-lg font-semibold text-ink-body">RWD / WETH</span>
         </p>
       </div>
     </div>
