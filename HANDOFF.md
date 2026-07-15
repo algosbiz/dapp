@@ -104,7 +104,7 @@ end, then push succeeded.
 | What | Address | Why dead |
 |---|---|---|
 | MasterChef gen 2 (per-second, no `ownerMint`) | `0x0e38363Cb657E82E44F0ccaad2A44a469C3AdA9d` | Superseded by current gen 3 above. Deployer's 0.0005 WETH test stake still sits here — low priority to reclaim (`withdraw(0, ...)`). |
-| RewardToken gen 2 | `0x70c7e20a09671CD02244D85135255FDb388ee6eE` | Belonged to gen-2 MasterChef. |
+| RewardToken gen 2 | `0x70c7e20a09671CD02244D85135255FDb388ee6eE` | Belonged to gen-2 MasterChef. **Browser test staker `0xB2FE8...233e9` has 21.52 RWD sitting here** (from harvesting gen-2 before the redeploy) — this is the address they have imported into MetaMask as "RWD", so MetaMask shows a nonzero balance while `/stake-rwd` (which reads the CURRENT gen-3 RewardToken) correctly shows 0 for that wallet. Not a bug — confirmed on-chain 2026-07-15. To see gen-3 RWD in MetaMask, import `0x3e71e09aF9278ed68d5D12df8edb2Ae1b69f8666` instead/additionally. Every MasterChef redeploy mints a fresh RewardToken, so this "wrong generation imported" confusion will recur if MasterChef is redeployed again — always re-check which RWD address a wallet has imported after a redeploy. |
 | MasterChef gen 1 (per-BLOCK, the original bug) | `0x0E3a21D76b065f19FC3733044Bb9955e16a1b65c` | Per-block emission barely accrued on this L2. **Browser test staker `0xB2FE805A538E05a79a5a37AEc093D0b2a79233e9` still has 0.001 WETH stuck here** — only that wallet can `emergencyWithdraw(0)` it out. No rush (accrues ~nothing), but don't forget. |
 | RewardToken gen 1 | `0x99C99b98139cD577f2109C2995058064b274e7F2` | Belonged to gen-1 MasterChef. |
 
