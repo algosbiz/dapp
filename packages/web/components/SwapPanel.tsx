@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { parseEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { CONTRACTS } from "@/config/contracts";
 import { SLIPPAGE_BPS, useWethRwdPoolActions, useWethRwdPoolData, withSlippage } from "@/hooks/useWethRwdPool";
 import { useTransactionToast } from "@/hooks/useTransactionToast";
 import { ButtonContent } from "@/components/Spinner";
+import { TokenPill } from "@/components/TokenPill";
 import { formatToken } from "@/lib/format";
 
 const SWAP_FEE_BPS = 30n;
@@ -39,8 +40,19 @@ function getPriceImpactBps(amountIn: bigint, amountOut: bigint, reserveIn: bigin
   return ((spotPrice - execPrice) * 10_000n) / spotPrice;
 }
 
-const buttonBase =
-  "rounded-card px-4 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+function SwapArrowIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 4v16M12 20l-6-6M12 20l6-6"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function SwapPanel() {
   const { isConnected } = useAccount();
@@ -67,14 +79,22 @@ export function SwapPanel() {
     return getAmountOut(parsedAmountIn, reserveIn, reserveOut);
   }, [parsedAmountIn, reserveIn, reserveOut]);
 
+  const spotOutPerIn = useMemo(() => {
+    if (reserveIn === undefined || reserveOut === undefined || reserveIn === 0n) return undefined;
+    return (reserveOut * PRECISION) / reserveIn;
+  }, [reserveIn, reserveOut]);
+
   const priceImpactBps = useMemo(() => {
     if (reserveIn === undefined || reserveOut === undefined || amountOut === undefined) return 0n;
     return getPriceImpactBps(parsedAmountIn, amountOut, reserveIn, reserveOut);
   }, [parsedAmountIn, amountOut, reserveIn, reserveOut]);
   const isHighImpact = priceImpactBps >= HIGH_IMPACT_BPS;
 
+  const inTokenSymbol = zeroForOne ? "WETH" : "RWD";
+  const outTokenSymbol = zeroForOne ? "RWD" : "WETH";
   const inTokenAddress = zeroForOne ? CONTRACTS.weth : CONTRACTS.rwdToken;
   const inBalance = zeroForOne ? wethBalance.data : rwdBalance.data;
+  const outBalance = zeroForOne ? rwdBalance.data : wethBalance.data;
   const inAllowance = zeroForOne ? wethAllowance.data : rwdAllowance.data;
   const approveIn = zeroForOne ? approveToken0 : approveToken1;
 
@@ -108,62 +128,118 @@ export function SwapPanel() {
     );
   }
 
+  let buttonLabel: string;
+  let buttonBusyLabel: string | undefined;
+  let buttonDisabled: boolean;
+  let onButtonClick: () => void;
+
+  if (parsedAmountIn === 0n) {
+    buttonLabel = "Enter an amount";
+    buttonDisabled = true;
+    onButtonClick = () => {};
+  } else if (needsApproval) {
+    buttonLabel = `Approve ${inTokenSymbol}`;
+    buttonBusyLabel = "Approving…";
+    buttonDisabled = isBusy;
+    onButtonClick = () => run(buttonLabel, () => approveIn(parsedAmountIn));
+  } else if (isHighImpact && !acknowledgedImpact) {
+    buttonLabel = "Confirm price impact to continue";
+    buttonDisabled = true;
+    onButtonClick = () => {};
+  } else {
+    buttonLabel = "Swap";
+    buttonBusyLabel = "Swapping…";
+    buttonDisabled = isBusy || !amountOut;
+    onButtonClick = () => run("Swap", () => swap(parsedAmountIn, inTokenAddress, withSlippage(amountOut ?? 0n)));
+  }
+  const isActionableButton = buttonLabel.startsWith("Approve") || buttonLabel === "Swap";
+
   return (
-    <div className="space-y-6 rounded-card bg-canvas p-6 shadow-card sm:p-8">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">Swap</h2>
-        <button
-          type="button"
-          onClick={() => setZeroForOne((v) => !v)}
-          disabled={isBusy}
-          className="text-sm font-semibold text-positive transition-colors hover:text-positive-deep disabled:opacity-40"
-        >
-          Switch direction ⇅
-        </button>
+    <div className="rounded-card bg-canvas p-6 shadow-card sm:p-8">
+      <h2 className="mb-5 font-display text-lg font-extrabold tracking-tight text-ink">Swap</h2>
+
+      <div className="space-y-1">
+        {/* Sell */}
+        <div className="rounded-control bg-canvas-soft p-4">
+          <div className="flex items-center justify-between">
+            <label htmlFor="swap-amount" className="text-xs font-semibold text-ink-body">
+              Sell
+            </label>
+            <div className="text-xs font-semibold text-ink-body">
+              Balance: {formatToken(inBalance)} {inTokenSymbol}
+              {inBalance !== undefined && inBalance > 0n && (
+                <button
+                  type="button"
+                  onClick={() => setAmount(formatEther(inBalance))}
+                  disabled={isBusy}
+                  className="ml-1.5 font-bold text-positive transition-colors hover:text-positive-deep disabled:opacity-40"
+                >
+                  Max
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <input
+              id="swap-amount"
+              type="text"
+              inputMode="decimal"
+              placeholder="0.0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent font-display text-3xl font-extrabold tracking-tight text-ink outline-none placeholder:font-normal placeholder:text-ink-body/40"
+            />
+            <TokenPill code={inTokenSymbol} tone={zeroForOne ? "ink" : "green"} />
+          </div>
+        </div>
+
+        {/* Direction toggle, sitting on the seam between the two boxes */}
+        <div className="relative h-0">
+          <div className="absolute inset-x-0 -top-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setZeroForOne((v) => !v)}
+              disabled={isBusy}
+              aria-label="Switch swap direction"
+              className="grid h-9 w-9 place-items-center rounded-full border-4 border-canvas bg-canvas-soft text-ink transition-transform hover:scale-105 hover:bg-ink/5 disabled:opacity-40"
+            >
+              <SwapArrowIcon />
+            </button>
+          </div>
+        </div>
+
+        {/* Buy */}
+        <div className="rounded-control bg-canvas-soft p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink-body">Buy</span>
+            <span className="text-xs font-semibold text-ink-body">
+              Balance: {formatToken(outBalance)} {outTokenSymbol}
+            </span>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="min-w-0 flex-1 truncate font-display text-3xl font-extrabold tracking-tight text-ink">
+              {amountOut !== undefined ? formatToken(amountOut, 6) : "0"}
+            </span>
+            <TokenPill code={outTokenSymbol} tone={zeroForOne ? "green" : "ink"} />
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label htmlFor="swap-amount" className="mb-1.5 block text-sm font-semibold text-ink">
-          {zeroForOne ? "From WETH" : "From RWD"}
-        </label>
-        <div className="relative">
-          <input
-            id="swap-amount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0.0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-control border border-ink/20 bg-canvas px-4 py-3 text-lg font-semibold text-ink outline-none transition-shadow placeholder:font-normal placeholder:text-[#6b6d6a] focus:border-ink focus:ring-4 focus:ring-brand/40"
-          />
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-body">
-            {zeroForOne ? "WETH" : "RWD"}
-          </span>
-        </div>
-        <div className="mt-1.5 text-xs text-ink-body">
-          Balance: {inBalance !== undefined ? formatToken(inBalance) : "0"} {zeroForOne ? "WETH" : "RWD"}
-        </div>
-      </div>
+      {spotOutPerIn !== undefined && (
+        <p className="mt-4 text-xs text-ink-body">
+          1 {inTokenSymbol} ≈ {formatToken(spotOutPerIn, 6)} {outTokenSymbol} · 0.3% fee ·{" "}
+          {Number(SLIPPAGE_BPS) / 100}% slippage tolerance
+        </p>
+      )}
 
-      <div className="rounded-control bg-canvas-soft p-4">
-        <p className="text-xs font-semibold text-ink-body">
-          You receive (≈, 0.3% fee included, {Number(SLIPPAGE_BPS) / 100}% slippage tolerance applied)
+      {priceImpactBps >= SHOW_IMPACT_BPS && (
+        <p className={`mt-1.5 text-xs font-semibold ${isHighImpact ? "text-negative-deep" : "text-warning-deep"}`}>
+          Price impact: ~{(Number(priceImpactBps) / 100).toFixed(2)}%
         </p>
-        <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">
-          {amountOut !== undefined ? formatToken(amountOut, 6) : "0"}
-          <span className="ml-1 text-sm font-semibold text-ink-body">{zeroForOne ? "RWD" : "WETH"}</span>
-        </p>
-        {priceImpactBps >= SHOW_IMPACT_BPS && (
-          <p
-            className={`mt-2 text-xs font-semibold ${isHighImpact ? "text-negative-deep" : "text-warning-deep"}`}
-          >
-            Price impact: ~{(Number(priceImpactBps) / 100).toFixed(2)}%
-          </p>
-        )}
-      </div>
+      )}
 
       {isHighImpact && (
-        <label className="flex items-start gap-2 rounded-control border border-negative/30 bg-negative/5 p-4 text-sm text-negative-deep">
+        <label className="mt-4 flex items-start gap-2 rounded-control border border-negative/30 bg-negative/5 p-4 text-sm text-negative-deep">
           <input
             type="checkbox"
             checked={acknowledgedImpact}
@@ -177,28 +253,16 @@ export function SwapPanel() {
         </label>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          disabled={!needsApproval || parsedAmountIn === 0n || isBusy}
-          onClick={() => run("Approve", () => approveIn(parsedAmountIn))}
-          className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
-        >
-          <ButtonContent busy={activeLabel === "Approve"} label="Approve" busyLabel="Approving…" />
-        </button>
-        <button
-          disabled={
-            needsApproval ||
-            parsedAmountIn === 0n ||
-            !amountOut ||
-            isBusy ||
-            (isHighImpact && !acknowledgedImpact)
-          }
-          onClick={() => run("Swap", () => swap(parsedAmountIn, inTokenAddress, withSlippage(amountOut ?? 0n)))}
-          className={`${buttonBase} bg-brand text-ink hover:bg-brand-active`}
-        >
-          <ButtonContent busy={activeLabel === "Swap"} label="Swap" busyLabel="Swapping…" />
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={buttonDisabled}
+        onClick={onButtonClick}
+        className={`mt-5 w-full rounded-card px-4 py-3.5 text-base font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          isActionableButton ? "bg-brand text-ink hover:bg-brand-active" : "bg-canvas-soft text-ink-body"
+        }`}
+      >
+        <ButtonContent busy={activeLabel === buttonLabel} label={buttonLabel} busyLabel={buttonBusyLabel} />
+      </button>
     </div>
   );
 }

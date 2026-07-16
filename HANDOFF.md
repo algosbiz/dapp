@@ -108,6 +108,29 @@ at ≥10% impact the warning turns red and the Swap button is gated behind an ex
 "I understand and want to proceed anyway" checkbox. This is exactly the guard that was
 missing when the incident above happened.
 
+**Swap UI redesign (2026-07-16):** the boss misread the original two-box/two-button
+layout, so `SwapPanel.tsx` was rebuilt to match conventional crypto swap UIs (Uniswap/
+Jupiter-style) instead of the original generic form:
+- Stacked "Sell"/"Buy" boxes (`bg-canvas-soft`) with a circular direction-toggle button
+  overlapping the seam between them, replacing the old text link. Each box shows a
+  `TokenPill` (new shared `components/TokenPill.tsx`, extracted from a duplicate
+  already living in `landing/Hero.tsx` — colored dot + symbol, not a selector, since
+  this app only ever has the one fixed pair).
+- "Sell" box balance line gained a **Max** button (fills the input with the full wallet
+  balance) — a standard swap-UI affordance that was missing before.
+- The old side-by-side Approve/Swap button grid (one often visibly disabled) was
+  replaced with a **single dynamic button** that changes label/action through the
+  flow: "Enter an amount" → "Approve WETH/RWD" → "Confirm price impact to continue"
+  (when applicable) → "Swap". This was likely the actual source of confusion — two
+  same-looking buttons where only one does anything at a time reads as broken to
+  anyone not already familiar with the approve-then-swap pattern.
+- All underlying math/logic (price impact calc, slippage, high-impact acknowledgment,
+  approve/swap wiring) is unchanged — this was a layout/interaction redesign only.
+- Verified in-browser end-to-end (temporarily bypassed the wallet-connect gate for
+  screenshotting only, reverted before commit): both directions, the Max button, the
+  rate line, and the high-impact red warning (a real ~16% impact on this shallow pool)
+  all render and recalculate correctly.
+
 ### 6. LP Farm (bottom of `/farm`) — stake `WETH-RWD-LP` to earn RWD
 
 New this session. `masterChef.add(1000, wethRwdPoolAddress, true)` created **pid 1**
