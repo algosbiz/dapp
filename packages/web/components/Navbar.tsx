@@ -29,6 +29,9 @@ export function Navbar() {
           <Link href="/pool" className="transition-colors hover:text-ink">
             Pool
           </Link>
+          <Link href="/tokenomics" className="transition-colors hover:text-ink">
+            Tokenomics
+          </Link>
           <Link href="/#security" className="transition-colors hover:text-ink">
             Security
           </Link>

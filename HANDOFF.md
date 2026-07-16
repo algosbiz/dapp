@@ -1,6 +1,6 @@
 # HANDOFF — WETH Staking / MasterChef farm / RWD-for-RWD pool / WETH-RWD AMM (Robinhood Chain)
 
-_Last updated: 2026-07-15. Repo is now on GitHub: https://github.com/algosbiz/dapp_
+_Last updated: 2026-07-16. Repo is now on GitHub: https://github.com/algosbiz/dapp_
 
 ## Current state (2026-07-15)
 
@@ -188,6 +188,42 @@ New this session, applied consistently across all 6 action panels (`StakingPanel
   session's wallet was actually connected): clicked Approve → button showed a spinner
   + "Approving…", toast progressed "confirm in your wallet…" → "Approve confirmed";
   same for Swap. Full lifecycle confirmed working, not just typechecked.
+
+### 9. Tokenomics Calculator (`/tokenomics`) — planning tool, no blockchain reads/writes for the "target" side
+
+New 2026-07-16. Traced back to a whiteboard note from the boss: "ADD Liquidity (LP) -
+$1000 LP - 10,000 MC." After walking through what that meant (LP budget vs. target market
+cap, and the ratio between them as a proxy for how resistant the pool would be to price
+swings), the user explicitly chose the no-real-funds option over actually moving testnet
+WETH to hit an arbitrary dollar target — this page is that option.
+
+`components/TokenomicsCalculator.tsx` (client component) takes two plain-number inputs,
+**target market cap** and **liquidity budget** (both unitless/illustrative — there is no
+USD price for testnet WETH, these are just numbers to reason about ratios with), and
+computes:
+- implied price per RWD = target market cap ÷ live total supply
+- deposit split (50/50 WETH/RWD by value, matching how `LiquidityPanel.tsx` seeds a pool)
+- liquidity ÷ market cap ratio, with a qualitative health label (`<1%` fragile → `>20%`
+  conservative — thresholds are a rule of thumb, not derived from anything on-chain)
+
+A second card, "Current live pool," shows the same ratio computed from **real** on-chain
+data — reuses `useWethRwdPoolData()` and the exact `convertByPoolPrice`/`APR_PRECISION`
+math from the Market Cap tile in `SupplyPanel.tsx`, so the two numbers are directly
+comparable. This is what surfaced the actual insight for the boss: the live pool's ratio
+is currently ~0.002% (a side effect of the pool-drain incident in section 5), thousands of
+times below any reasonable target — which is probably what was really behind the earlier
+"send 5 WETH" ask.
+
+Required adding `totalSupply` to `abi/erc20.ts` (was missing — only `balanceOf`/
+`allowance`/`decimals`/`symbol` existed before, none of which this page needed).
+
+Verified in-browser: default values ($10,000 MC / $1,000 budget) produce the hand-checked
+numbers ($48.572/RWD, $500 + 10.29 RWD deposit, 10% ratio, "Reasonable starting point");
+changing the budget input to $5,000 live-recalculates every downstream figure (50% ratio,
+"Very deep — conservative", updated comparison text) — confirms the page is reactive, not
+just correct on first paint.
+
+Linked from the navbar between "Pool" and "Security".
 
 ## Repo is now on GitHub
 
