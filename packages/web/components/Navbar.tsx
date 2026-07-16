@@ -43,12 +43,6 @@ export function Navbar() {
           <div className="hidden sm:block">
             <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
           </div>
-          <Link
-            href="/stake"
-            className="rounded-card bg-brand px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-brand-active"
-          >
-            Start staking
-          </Link>
         </div>
       </div>
     </header>
