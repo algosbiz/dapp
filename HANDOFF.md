@@ -225,6 +225,24 @@ just correct on first paint.
 
 Linked from the navbar between "Pool" and "Security".
 
+### 10. RWD price pill in navbar — mockup only, static placeholder
+
+New 2026-07-16. The boss also mentioned wanting a USD price for 1 RWD shown in the
+navbar. Same underlying issue as market cap: RWD has no real listing or price feed on
+testnet, so there is nothing live to show. Per explicit user choice, this is a **static
+placeholder**, not wired to any pool or price source — `components/RwdPricePill.tsx`
+hardcodes `MOCK_RWD_PRICE_USD = 0.05` and renders "1 RWD ≈ $0.05" next to an explicit
+"Mock" tag so nobody mistakes it for real market data. Tooltip (`title` attribute) and
+`aria-label` both spell out that it's a placeholder for demo purposes.
+
+Placed in `Navbar.tsx` between the nav links and the Connect Wallet button, `hidden
+lg:inline-flex` (≥1024px only) to avoid crowding the already-busy navbar at smaller
+widths — same responsive pattern already used for `ConnectButton` (`hidden sm:block`).
+
+To wire this to something real later: this is the one spot in the app that would need
+an actual USD price feed (everything else — APR, market cap, the tokenomics calculator —
+deliberately avoids needing one by working in WETH-relative terms instead).
+
 ## Repo is now on GitHub
 
 `git init` + initial commit + push done this session. Remote: `origin` →

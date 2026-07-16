@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { RwdPricePill } from "./RwdPricePill";
 
 export function Navbar() {
   return (
@@ -38,6 +39,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2.5">
+          <RwdPricePill />
           <div className="hidden sm:block">
             <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
           </div>
