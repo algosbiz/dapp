@@ -266,6 +266,37 @@ To wire this to something real later: this is the one spot in the app that would
 an actual USD price feed (everything else — APR, market cap, the tokenomics calculator —
 deliberately avoids needing one by working in WETH-relative terms instead).
 
+### 11. Mobile responsiveness pass — navbar hamburger menu + button-grid fix
+
+New 2026-07-16. Previously the navbar had **no way to reach any page on mobile** — the
+nav links (`hidden ... md:flex`) and the Connect Wallet button (`hidden sm:block`)
+both disappeared below their breakpoints with no replacement, leaving just the logo.
+Not caught earlier because verification in this session has mostly been in-browser at
+desktop width; window-resize automation isn't available in this environment (confirmed
+`resize_window` has no effect here), so mobile viewports were tested via a same-origin
+`<iframe>` sized to the target width — an independent viewport for real CSS media-query
+behavior, not a substitute for testing on an actual device before shipping.
+
+**`Navbar.tsx`**: added a hamburger button (`md:hidden`) that toggles a slide-down
+drawer (`id="mobile-nav"`, `md:hidden`) containing all 6 nav links stacked full-width
+plus the `ConnectButton`. The desktop `ConnectButton` visibility changed from `hidden
+sm:block` to `hidden md:block` so it switches in lockstep with the nav links and
+hamburger at the same single breakpoint (768px) rather than three staggered ones.
+Drawer auto-closes on route change (`usePathname` + `useEffect`) so tapping a link
+doesn't leave it open on the next page. Verified: opens/closes correctly, all 6 links
+navigate and close the drawer, and the 768px→900px transition to full desktop nav has
+no overlap or duplicate controls.
+
+**`LiquidityPanel.tsx`**: the Add Liquidity action row (`Approve WETH` / `Approve RWD`
+/ `Add`) was a fixed `grid-cols-3`, which wrapped button labels onto two lines at phone
+widths. Changed to `grid-cols-1 sm:grid-cols-3` — stacks full-width below 640px, same
+3-up layout as before from `sm:` up.
+
+Everything else audited at 390px (iPhone-ish width) across `/`, `/stake`, `/farm`,
+`/stake-rwd`, `/pool`, `/tokenomics` — all card grids (`sm:grid-cols-*`, `lg:grid-cols-2`)
+already collapsed to a single column correctly and needed no changes; this was
+specifically a navbar-navigation gap plus the one cramped button row.
+
 ## Repo is now on GitHub
 
 `git init` + initial commit + push done this session. Remote: `origin` →
