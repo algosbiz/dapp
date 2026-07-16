@@ -45,6 +45,16 @@ Fed by `packages/contracts/scripts/snapshot-supply.ts` — read-only, no private
 run unattended. `RewardToken` has no burn function so `totalSupply()` only grows; a daily
 snapshot diff is sufficient, no event indexer needed.
 
+**4th tile added (2026-07-15, later): "Market cap (est.)"** — `totalSupply x current /pool
+price`, both in WETH terms (same no-USD-needed trick as the APR math in `lib/apr.ts`,
+which this reuses: `convertByPoolPrice`/`APR_PRECISION`). Unlike the other three tiles
+(from the daily snapshot file), this one does a **live** on-chain read of `/pool`'s
+reserves via a server-side `viem` `createPublicClient` call (hardcoded to
+`robinhoodTestnet` — this project only targets testnet right now), so it's current
+between snapshot runs, not frozen to the last snapshot's price. Explicitly labeled
+"est." with a caption noting testnet WETH has no USD value and the number can swing
+fast since the pool is still shallow.
+
 **Scheduled task `rwd-supply-snapshot`** (`C:\Users\Gigabyte\.claude\scheduled-tasks\rwd-supply-snapshot\SKILL.md`)
 runs daily at 00:06 local time: `npm run contracts:snapshot` → commit + push
 `rwd-supply-snapshots.json` to `origin main` if it changed. **First automated run may hit a
