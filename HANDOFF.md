@@ -297,6 +297,32 @@ Everything else audited at 390px (iPhone-ish width) across `/`, `/stake`, `/farm
 already collapsed to a single column correctly and needed no changes; this was
 specifically a navbar-navigation gap plus the one cramped button row.
 
+### 14. Pre-mint RWD to 10,000 total supply (2026-07-16)
+
+Boss (Uriah) asked to "start the supply at 10,000 RWD" so tokens can be "bought without
+so much price impact or scarcity." **Important correction surfaced to the user before
+acting:** total supply ≠ pool liquidity. Price impact is set by the pool's reserve depth
+(especially WETH), *not* by how many RWD exist. Minting RWD into a wallet does nothing for
+price impact on its own — it just makes the tokens exist so they *can* later be added to the
+pool. Delivering the boss's actual goal is a 2-step job: (1) mint the RWD [done], (2) seed
+the pool with that RWD **+ WETH** at a chosen price [still pending — blocked on WETH, which
+is why `/wrap` + the faucet matter]. At the current ~4 RWD/WETH price, putting 10k RWD in
+the pool would need ~2,490 WETH, so step 2 realistically also means resetting RWD to a much
+lower price first. Not yet done; needs a WETH budget + target-price decision from the boss.
+
+Executed step 1 via `MasterChef.ownerMint(deployer, 10000e18 - currentSupply)` from the
+deployer/owner wallet — minted **9,794.12 RWD** to bring total supply to **exactly 10,000.0
+RWD** (tx `0x9ec5b86317e63faec3fca33e99aada5533e87656ef00510aa46d152779ceff09`, block
+90885339). Deployer now holds ~9,795 RWD, earmarked for seeding the pool. **This is
+irreversible** — `RewardToken` has no burn, supply only grows; the user confirmed the exact
+amount before execution given that.
+
+Ran `npm run contracts:snapshot` afterward so the `/farm` supply dashboard reflects 10,000
+immediately (new data point in `rwd-supply-snapshots.json`, committed). Side effect to be
+aware of: the "minted last 7/30 days" tiles will now show a ~9,794 RWD spike (accurate — it
+*was* minted), and "Market cap (est.)" jumps to ~supply×price, a big number since price is
+still 4 RWD/WETH. Both are honest reflections of the mint, not bugs.
+
 ### 13. Navbar grouped into dropdowns (2026-07-16)
 
 Once `/wrap` landed, the top nav had 7 flat text links (Wrap, Stake, Farm, Stake RWD,
