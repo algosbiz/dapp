@@ -7,6 +7,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { RwdPricePill } from "./RwdPricePill";
 
 const navLinks = [
+  { href: "/wrap", label: "Wrap" },
   { href: "/stake", label: "Stake" },
   { href: "/farm", label: "Farm" },
   { href: "/stake-rwd", label: "Stake RWD" },

@@ -297,6 +297,43 @@ Everything else audited at 390px (iPhone-ish width) across `/`, `/stake`, `/farm
 already collapsed to a single column correctly and needed no changes; this was
 specifically a navbar-navigation gap plus the one cramped button row.
 
+### 12. Wrap ETH → WETH (`/wrap`) — get testable WETH into a wallet
+
+New 2026-07-16. The whole app runs on WETH, but the testnet faucet
+(`https://faucet.testnet.chain.robinhood.com`) only hands out **native ETH**, not WETH —
+so a fresh tester (the boss, repeatedly) had ETH but no WETH and nothing in the app let
+them convert it. Rather than walk non-technical users through the block-explorer "Write
+Contract" flow each time, this adds a one-click wrap widget.
+
+**The WETH contract is a proxy, not a plain deploy** — confirmed on-chain:
+`0x7943e237c7F95DA44E0301572D358911207852Fa` has an EIP-1967 implementation slot pointing
+at `0xf40600e58a560a988d7b60d61f22f7ab18106ed6`. A raw bytecode selector-scan on the proxy
+shows **no** `deposit()`/`withdraw()` (they live in the implementation), so don't conclude
+"not wrappable" from the proxy bytecode alone. An `eth_call` simulation of `deposit()` with
+value **succeeds**, and `mint(address,uint256)` **reverts** — i.e. it's a standard WETH9
+behind a proxy: you wrap real testnet ETH, you can't mint WETH out of thin air.
+
+Files: `abi/weth.ts` (just `deposit()` payable + `withdraw(uint256)`), `hooks/useWrap.ts`
+(`useWrapData` = native ETH via wagmi `useBalance` + WETH via `erc20.balanceOf`;
+`useWrapActions` = `wrap`/`unwrap`), `components/WrapPanel.tsx` (Swap-style stacked
+You-pay/You-receive with a direction toggle, 1:1 mirror, `TokenPill`s), `app/wrap/page.tsx`
+(links out to the faucet). Navbar gets a `/wrap` link **first** in the list, since it's the
+natural on-ramp before Stake/Farm/etc.
+
+Two deliberate UX details: (1) **Max** on the wrap side subtracts a `0.0002` ETH gas
+cushion (`GAS_BUFFER`) so a "max wrap" never leaves the wallet with 0 ETH and unable to pay
+for its own tx; unwrap-side Max uses the full WETH balance. (2) an inline "amount > balance"
+guard disables the button.
+
+**Not driven on-chain in-browser** — same constraint as every other write action this
+session: MetaMask's confirm popup is a separate extension window outside the automation tab
+group. Verified instead by: the `eth_call` deposit() simulation above (proves the exact call
+the UI builds executes), full in-browser UI check of both directions + 1:1 recalculation
+(temp-bypassing the wallet gate for screenshots, reverted before commit), clean `tsc` and
+zero console errors. **Claude cannot and does not execute the wrap for the user** — it needs
+their wallet's signature; the widget exists precisely so they sign it themselves in one
+click.
+
 ## Repo is now on GitHub
 
 `git init` + initial commit + push done this session. Remote: `origin` →
