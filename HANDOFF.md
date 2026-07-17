@@ -55,6 +55,17 @@ between snapshot runs, not frozen to the last snapshot's price. Explicitly label
 "est." with a caption noting testnet WETH has no USD value and the number can swing
 fast since the pool is still shallow.
 
+**Card layout tidied (2026-07-16):** the four tiles now share a `MetricCard` component
+(label / headline figure / caption pinned to the card base via `mt-auto`), so uneven
+caption lengths no longer leave dead space under the shorter cards, and the "insufficient
+history" state shows "—" instead of the placeholder text posing as the headline number.
+Also fixed the Market cap figure overflowing its rounded card at some price points — grid
+items don't shrink below their content's intrinsic width by default, so an unbroken long
+decimal like "2,490.3808" pushed past the card border onto the page background. Fixed with
+a new `formatWethHeadline` in `lib/format.ts` (caps at 2 decimals for headline WETH figures,
+compact notation past a million) plus `min-w-0` + `break-words` on the tile container, so
+it can't recur regardless of how large the number gets.
+
 **Scheduled task `rwd-supply-snapshot`** (`C:\Users\Gigabyte\.claude\scheduled-tasks\rwd-supply-snapshot\SKILL.md`)
 runs daily at 00:06 local time: `npm run contracts:snapshot` → commit + push
 `rwd-supply-snapshots.json` to `origin main` if it changed. **First automated run may hit a
