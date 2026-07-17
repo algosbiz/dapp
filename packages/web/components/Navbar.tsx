@@ -94,12 +94,9 @@ function NavDropdown({ group, pathname }: { group: NavGroup; pathname: string })
   }, [pathname]);
 
   return (
-    <div
-      ref={ref}
-      className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    // Click-to-open (not hover): a hover menu closes the moment the cursor crosses the gap
+    // between trigger and menu, which reads as "it disappears when I try to click it".
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
