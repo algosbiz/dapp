@@ -55,6 +55,25 @@ between snapshot runs, not frozen to the last snapshot's price. Explicitly label
 "est." with a caption noting testnet WETH has no USD value and the number can swing
 fast since the pool is still shallow.
 
+**Market cap now shown in USD (2026-07-16):** boss asked for market cap "in USD" — pushed
+back first on what that can honestly mean here (see the conversation, not repeated in full),
+then implemented the one approach that isn't fabricated: `lib/price.ts` fetches a **live
+ETH/USD price** (public CoinGecko endpoint, no key, `next: { revalidate: 60 }` so page views
+don't hammer the free tier) and multiplies it by the market cap already computed in WETH
+terms. This is the **only external, off-chain price dependency in the entire app** —
+everything else (APR, the base WETH-denominated market cap, the tokenomics calculator)
+deliberately avoids needing one. The USD figure is still explicitly labeled hypothetical
+("as if RWD traded at today's ETH price") because the RWD:WETH leg of the calculation comes
+from our own shallow testnet pool, not a real market — only the ETH/USD leg is real. Tile
+now shows `$109.71M` as the headline with `≈ 60,138.26 WETH` underneath (new `MetricCard`
+`secondaryLine` prop) so the underlying WETH figure — the actually-real number — stays
+visible, not replaced. **Graceful fallback:** if the CoinGecko fetch fails (network, rate
+limit) the tile silently reverts to the old WETH-only display rather than breaking or
+showing an error — verified the happy path live (real fetch, sane resulting ETH price
+backed out of the displayed numbers), the fallback path is untested-live but reuses the
+exact pre-existing WETH-only render branch. New `formatUsdHeadline` in `lib/format.ts`
+mirrors `formatWethHeadline`'s overflow-safe shape (2 decimals, compact past a million).
+
 **Card layout tidied (2026-07-16):** the four tiles now share a `MetricCard` component
 (label / headline figure / caption pinned to the card base via `mt-auto`), so uneven
 caption lengths no longer leave dead space under the shorter cards, and the "insufficient

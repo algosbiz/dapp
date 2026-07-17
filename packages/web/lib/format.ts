@@ -51,6 +51,23 @@ export function formatWethHeadline(value: bigint | undefined): string {
 }
 
 /**
+ * Compact "$" display for a headline USD figure in a narrow stat tile — same overflow-safe
+ * shape as formatWethHeadline (2 decimals normally, compact notation past a million).
+ */
+export function formatUsdHeadline(value: number | undefined): string {
+  if (value === undefined || !Number.isFinite(value)) return "—";
+  if (value === 0) return "$0";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    return `$${value.toLocaleString(undefined, { notation: "compact", maximumFractionDigits: 2 })}`;
+  }
+  if (abs < 0.01) {
+    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
+  }
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
  * Formats a percentage value (e.g. 12.34 -> "12.34%"). Returns an em dash for undefined,
  * NaN, or non-finite values so a missing price/zero-TVL case never prints "NaN%" or "Infinity%".
  */

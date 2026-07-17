@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, formatEther, http } from "viem";
 import { robinhoodTestnet } from "@/config/chains";
 import { wethRwdPoolAbi } from "@/abi/wethRwdPool";
 import { CONTRACTS } from "@/config/contracts";
 import { APR_PRECISION, convertByPoolPrice } from "@/lib/apr";
-import { formatToken, formatWethHeadline } from "@/lib/format";
+import { formatToken, formatUsdHeadline, formatWethHeadline } from "@/lib/format";
+import { fetchEthUsdPrice } from "@/lib/price";
 
 type Snapshot = {
   timestamp: string;
@@ -79,7 +80,14 @@ export async function SupplyPanel() {
 
   const minted7d = base7d ? totalSupply - BigInt(base7d.totalSupply) : undefined;
   const minted30d = base30d ? totalSupply - BigInt(base30d.totalSupply) : undefined;
-  const marketCapInWeth = await fetchMarketCapInWeth(totalSupply);
+  const [marketCapInWeth, ethUsdPrice] = await Promise.all([
+    fetchMarketCapInWeth(totalSupply),
+    fetchEthUsdPrice(),
+  ]);
+  const marketCapInUsd =
+    marketCapInWeth !== undefined && ethUsdPrice !== undefined
+      ? Number(formatEther(marketCapInWeth)) * ethUsdPrice
+      : undefined;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -111,25 +119,35 @@ export async function SupplyPanel() {
       />
       <MetricCard
         label="Market cap (est.)"
-        value={marketCapInWeth !== undefined ? formatWethHeadline(marketCapInWeth) : "—"}
-        unit="WETH"
-        caption="Supply × live pool price. Testnet WETH has no USD value — illustrative only."
+        value={marketCapInUsd !== undefined ? formatUsdHeadline(marketCapInUsd) : formatWethHeadline(marketCapInWeth)}
+        unit={marketCapInUsd === undefined && marketCapInWeth !== undefined ? "WETH" : undefined}
+        secondaryLine={
+          marketCapInUsd !== undefined ? `≈ ${formatWethHeadline(marketCapInWeth)} WETH` : undefined
+        }
+        caption={
+          marketCapInUsd !== undefined
+            ? "Supply × pool price × today's live ETH/USD rate. Hypothetical — the RWD:WETH ratio itself comes from our shallow testnet pool."
+            : "Supply × live pool price. Testnet WETH has no USD value — illustrative only."
+        }
       />
     </div>
   );
 }
 
-/** One stat tile: label on top, headline figure, and a caption pinned to the card's base
- *  so every card reads at the same density regardless of how long its caption is. */
+/** One stat tile: label on top, headline figure (with an optional smaller line underneath
+ *  for a secondary unit, e.g. the WETH figure behind a USD headline), and a caption pinned
+ *  to the card's base so every card reads at the same density regardless of caption length. */
 function MetricCard({
   label,
   value,
   unit,
+  secondaryLine,
   caption,
 }: {
   label: string;
   value: string;
   unit?: string;
+  secondaryLine?: string;
   caption: string;
 }) {
   return (
@@ -139,6 +157,7 @@ function MetricCard({
         {value}
         {unit && <span className="ml-1 text-lg font-semibold text-ink-body">{unit}</span>}
       </p>
+      {secondaryLine && <p className="mt-1 break-words text-sm font-semibold text-ink-body">{secondaryLine}</p>}
       <p className="mt-auto pt-6 text-xs leading-relaxed text-ink-body">{caption}</p>
     </div>
   );
