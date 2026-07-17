@@ -5,7 +5,7 @@ import { robinhoodTestnet } from "@/config/chains";
 import { wethRwdPoolAbi } from "@/abi/wethRwdPool";
 import { CONTRACTS } from "@/config/contracts";
 import { APR_PRECISION, convertByPoolPrice } from "@/lib/apr";
-import { formatToken, formatTokenSmart } from "@/lib/format";
+import { formatToken, formatWethHeadline } from "@/lib/format";
 
 type Snapshot = {
   timestamp: string;
@@ -111,7 +111,7 @@ export async function SupplyPanel() {
       />
       <MetricCard
         label="Market cap (est.)"
-        value={marketCapInWeth !== undefined ? formatTokenSmart(marketCapInWeth) : "—"}
+        value={marketCapInWeth !== undefined ? formatWethHeadline(marketCapInWeth) : "—"}
         unit="WETH"
         caption="Supply × live pool price. Testnet WETH has no USD value — illustrative only."
       />
@@ -133,9 +133,9 @@ function MetricCard({
   caption: string;
 }) {
   return (
-    <div className="flex flex-col rounded-card bg-canvas p-6 shadow-card">
+    <div className="flex min-w-0 flex-col rounded-card bg-canvas p-6 shadow-card">
       <p className="text-sm font-semibold text-ink-body">{label}</p>
-      <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
+      <p className="mt-2 break-words text-3xl font-extrabold tracking-tight text-ink">
         {value}
         {unit && <span className="ml-1 text-lg font-semibold text-ink-body">{unit}</span>}
       </p>
