@@ -83,47 +83,63 @@ export async function SupplyPanel() {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">Total RWD supply</p>
-        <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatToken(totalSupply)} <span className="text-lg font-semibold text-ink-body">RWD</span>
-        </p>
-      </div>
-      <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">Minted, last 7 days</p>
-        <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {minted7d !== undefined ? (
-            <>
-              {formatToken(minted7d)} <span className="text-lg font-semibold text-ink-body">RWD</span>
-            </>
-          ) : (
-            <span className="text-lg font-semibold text-ink-body">{daysOfHistory}d of history so far</span>
-          )}
-        </p>
-      </div>
-      <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">Minted, last 30 days</p>
-        <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {minted30d !== undefined ? (
-            <>
-              {formatToken(minted30d)} <span className="text-lg font-semibold text-ink-body">RWD</span>
-            </>
-          ) : (
-            <span className="text-lg font-semibold text-ink-body">{daysOfHistory}d of history so far</span>
-          )}
-        </p>
-      </div>
-      <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">Market cap (est.)</p>
-        <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {marketCapInWeth !== undefined ? formatTokenSmart(marketCapInWeth) : "—"}
-          <span className="ml-1 text-lg font-semibold text-ink-body">WETH</span>
-        </p>
-        <p className="mt-1 text-xs text-ink-body">
-          Total supply x current /pool price. Testnet WETH has no USD value — this is
-          illustrative, and can swing fast on a shallow pool.
-        </p>
-      </div>
+      <MetricCard
+        label="Total RWD supply"
+        value={formatToken(totalSupply)}
+        unit="RWD"
+        caption="Every RWD that exists so far. This number only ever goes up."
+      />
+      <MetricCard
+        label="Minted, last 7 days"
+        value={minted7d !== undefined ? formatToken(minted7d) : "—"}
+        unit={minted7d !== undefined ? "RWD" : undefined}
+        caption={
+          minted7d !== undefined
+            ? "New RWD created over the past week."
+            : `Needs 7 days of history to show — ${daysOfHistory}d recorded so far.`
+        }
+      />
+      <MetricCard
+        label="Minted, last 30 days"
+        value={minted30d !== undefined ? formatToken(minted30d) : "—"}
+        unit={minted30d !== undefined ? "RWD" : undefined}
+        caption={
+          minted30d !== undefined
+            ? "New RWD created over the past month."
+            : `Needs 30 days of history to show — ${daysOfHistory}d recorded so far.`
+        }
+      />
+      <MetricCard
+        label="Market cap (est.)"
+        value={marketCapInWeth !== undefined ? formatTokenSmart(marketCapInWeth) : "—"}
+        unit="WETH"
+        caption="Supply × live pool price. Testnet WETH has no USD value — illustrative only."
+      />
+    </div>
+  );
+}
+
+/** One stat tile: label on top, headline figure, and a caption pinned to the card's base
+ *  so every card reads at the same density regardless of how long its caption is. */
+function MetricCard({
+  label,
+  value,
+  unit,
+  caption,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  caption: string;
+}) {
+  return (
+    <div className="flex flex-col rounded-card bg-canvas p-6 shadow-card">
+      <p className="text-sm font-semibold text-ink-body">{label}</p>
+      <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
+        {value}
+        {unit && <span className="ml-1 text-lg font-semibold text-ink-body">{unit}</span>}
+      </p>
+      <p className="mt-auto pt-6 text-xs leading-relaxed text-ink-body">{caption}</p>
     </div>
   );
 }
