@@ -1,20 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { RwdPricePill } from "./RwdPricePill";
 
-const navLinks = [
+type NavItem = { href: string; label: string };
+type NavGroup = { label: string; items: NavItem[] };
+type NavEntry = NavItem | NavGroup;
+
+const navEntries: NavEntry[] = [
   { href: "/wrap", label: "Wrap" },
-  { href: "/stake", label: "Stake" },
-  { href: "/farm", label: "Farm" },
-  { href: "/stake-rwd", label: "Stake RWD" },
+  {
+    label: "Earn",
+    items: [
+      { href: "/stake", label: "Stake" },
+      { href: "/farm", label: "Farm" },
+      { href: "/stake-rwd", label: "Stake RWD" },
+    ],
+  },
   { href: "/pool", label: "Pool" },
-  { href: "/tokenomics", label: "Tokenomics" },
-  { href: "/#security", label: "Security" },
+  {
+    label: "More",
+    items: [
+      { href: "/tokenomics", label: "Tokenomics" },
+      { href: "/#security", label: "Security" },
+    ],
+  },
 ];
+
+const isGroup = (entry: NavEntry): entry is NavGroup => "items" in entry;
+
+/** Route-path portion of an href (drops any #hash), for active-state matching. */
+const pathOf = (href: string) => href.split("#")[0];
 
 function MenuIcon({ open }: { open: boolean }) {
   if (open) {
@@ -28,6 +47,90 @@ function MenuIcon({ open }: { open: boolean }) {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+    >
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Desktop-only dropdown grouping several same-function links under one trigger. */
+function NavDropdown({ group, pathname }: { group: NavGroup; pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const active = group.items.some((item) => pathname === pathOf(item.href) && pathOf(item.href) !== "/");
+
+  // Close on outside click / Escape.
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  // Close after navigating to one of its items.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  return (
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={`inline-flex items-center gap-1 transition-colors hover:text-ink ${active ? "text-ink" : ""}`}
+      >
+        {group.label}
+        <Chevron open={open} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute left-0 top-full z-50 mt-2 min-w-[11rem] rounded-control border border-ink/10 bg-canvas p-1.5 shadow-card"
+        >
+          {group.items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              className={`block rounded-control px-3 py-2 text-sm font-semibold transition-colors hover:bg-ink/5 hover:text-ink ${
+                pathname === pathOf(item.href) && pathOf(item.href) !== "/" ? "text-ink" : "text-ink-body"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -53,11 +156,15 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm font-semibold text-ink-body md:flex">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="transition-colors hover:text-ink">
-              {link.label}
-            </Link>
-          ))}
+          {navEntries.map((entry) =>
+            isGroup(entry) ? (
+              <NavDropdown key={entry.label} group={entry} pathname={pathname} />
+            ) : (
+              <Link key={entry.href} href={entry.href} className="transition-colors hover:text-ink">
+                {entry.label}
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="flex items-center gap-2.5">
@@ -79,20 +186,32 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <nav
-          id="mobile-nav"
-          className="border-t border-ink/10 bg-canvas px-4 py-3 sm:px-6 md:hidden"
-        >
+        <nav id="mobile-nav" className="border-t border-ink/10 bg-canvas px-4 py-3 sm:px-6 md:hidden">
           <div className="flex flex-col">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-control px-2 py-3 text-base font-semibold text-ink-body transition-colors hover:bg-ink/5 hover:text-ink"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navEntries.map((entry) =>
+              isGroup(entry) ? (
+                <div key={entry.label} className="py-1">
+                  <p className="px-2 pt-2 text-xs font-semibold text-ink-body/60">{entry.label}</p>
+                  {entry.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="block rounded-control px-2 py-3 text-base font-semibold text-ink-body transition-colors hover:bg-ink/5 hover:text-ink"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <Link
+                  key={entry.href}
+                  href={entry.href}
+                  className="rounded-control px-2 py-3 text-base font-semibold text-ink-body transition-colors hover:bg-ink/5 hover:text-ink"
+                >
+                  {entry.label}
+                </Link>
+              )
+            )}
           </div>
           <div className="mt-2 border-t border-ink/10 pt-4">
             <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />

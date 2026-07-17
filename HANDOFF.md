@@ -297,6 +297,29 @@ Everything else audited at 390px (iPhone-ish width) across `/`, `/stake`, `/farm
 already collapsed to a single column correctly and needed no changes; this was
 specifically a navbar-navigation gap plus the one cramped button row.
 
+### 13. Navbar grouped into dropdowns (2026-07-16)
+
+Once `/wrap` landed, the top nav had 7 flat text links (Wrap, Stake, Farm, Stake RWD,
+Pool, Tokenomics, Security) plus the price pill + RainbowKit chain/wallet controls, and
+looked cramped. Grouped the same-function links under dropdown triggers in `Navbar.tsx`:
+top level is now **Wrap · Earn ▾ · Pool · More ▾**, where **Earn** = Stake/Farm/Stake RWD
+(the three yield products) and **More** = Tokenomics/Security. Wrap and Pool stay top-level
+(Wrap is the on-ramp; Pool is the swap/liquidity surface).
+
+Nav config is now structured (`NavItem | NavGroup`, `isGroup()` type guard) instead of a
+flat array. Desktop groups render via a local `NavDropdown` component: opens on
+hover **and** click (click/Enter/Space toggles for keyboard + touch), closes on
+outside-click, Escape, or route change (`usePathname`), with `aria-haspopup`/`aria-expanded`
+and a rotating chevron. The dropdown menu is `position: absolute` with `z-50`; the sticky
+header (`z-40`) has no `overflow: hidden`, so it isn't clipped. Active-state highlights the
+trigger when the current route matches one of its items (hash links like `/#security` are
+excluded from active-matching via `pathOf()` which strips the `#…`).
+
+Mobile drawer keeps every link reachable in one tap (no nested dropdowns on mobile —
+there's vertical room): standalone links render flat, grouped links render under a small
+non-uppercase group label. Deliberately avoided an uppercase-tracked label there — that's
+the flagged "eyebrow" tell.
+
 ### 12. Wrap ETH → WETH (`/wrap`) — get testable WETH into a wallet
 
 New 2026-07-16. The whole app runs on WETH, but the testnet faucet
