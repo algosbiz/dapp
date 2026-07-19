@@ -8,7 +8,7 @@ import { SLIPPAGE_BPS, useWethRwdPoolActions, useWethRwdPoolData, withSlippage }
 import { useTransactionToast } from "@/hooks/useTransactionToast";
 import { ButtonContent } from "@/components/Spinner";
 import { TokenPill } from "@/components/TokenPill";
-import { formatToken } from "@/lib/format";
+import { formatToken, formatTokenSmart } from "@/lib/format";
 
 const SWAP_FEE_BPS = 30n;
 const BPS_DENOMINATOR = 10_000n;
@@ -218,7 +218,7 @@ export function SwapPanel() {
           </div>
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="min-w-0 flex-1 truncate font-display text-3xl font-extrabold tracking-tight text-ink">
-              {amountOut !== undefined ? formatToken(amountOut, 6) : "0"}
+              {amountOut !== undefined ? formatTokenSmart(amountOut) : "0"}
             </span>
             <TokenPill code={outTokenSymbol} tone={zeroForOne ? "green" : "ink"} />
           </div>
@@ -227,7 +227,7 @@ export function SwapPanel() {
 
       {spotOutPerIn !== undefined && (
         <p className="mt-4 text-xs text-ink-body">
-          1 {inTokenSymbol} ≈ {formatToken(spotOutPerIn, 6)} {outTokenSymbol} · 0.3% fee ·{" "}
+          1 {inTokenSymbol} ≈ {formatTokenSmart(spotOutPerIn)} {outTokenSymbol} · 0.3% fee ·{" "}
           {Number(SLIPPAGE_BPS) / 100}% slippage tolerance
         </p>
       )}

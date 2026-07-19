@@ -327,6 +327,64 @@ Everything else audited at 390px (iPhone-ish width) across `/`, `/stake`, `/farm
 already collapsed to a single column correctly and needed no changes; this was
 specifically a navbar-navigation gap plus the one cramped button row.
 
+### 15. "Swap doesn't really work" investigation (2026-07-20) — two separate findings, one real bug
+
+User reported Swap "and some other functions" weren't working. Root-caused via the
+`systematic-debugging` process (not guessed) — turned out to be **two unrelated things**,
+neither of which was "Swap is broken":
+
+**Finding 1 — my own local dev server was crashing, not the deployed app.** `git log`
+turned up a commit *not made in this session*, **"Build immersive WETH landing experience"**
+(`42c8096`, 2026-07-17): a full home-page redesign (`ImmersiveLanding.tsx`/`OrbitalScene.tsx`
+/`ScrollSequence.tsx`, Three.js + GSAP, a new sprite asset) landed on `main` between two of
+this session's own commits — evidence someone else (or another session) is also pushing to
+this repo. It added `three`/`gsap` to `package.json`, but this local checkout's `node_modules`
+never got a matching `npm install`, so every request to `/` crashed the entire dev server
+(`Error: Cannot find module './vendor-chunks/gsap.js'`, then the whole `npm run dev` process
+exited) — meaning *every* page looked down locally, not just Swap. Fixed by `npm install` at
+the repo root (workspaces hoist to the root `node_modules`, not `packages/web/node_modules` —
+checking the wrong folder first gave a false "still missing" reading) + clearing the stale
+`.next` cache. Confirmed via GitHub's commit-status API that **Vercel's own build for this
+commit succeeded** (`state: success`) — Vercel does a fresh install from the lockfile, so this
+was purely a local-environment gap, not something the deployed app ever had.
+
+**Finding 2 — the real bug, on the actual Vercel deployment.** Got the live staging URL
+(`https://dapp-web-phi.vercel.app`) from the user and tested Swap there directly with a real
+connected wallet: typing an amount computed a correct preview, the price-impact checkbox
+gated the button exactly as designed — Swap itself works. The user then sent a screenshot of
+a block explorer showing a real submitted swap tx with **"Batch: Pending"** and concluded it
+was stuck. Verified directly against the RPC (not just trusting the explorer UI): tx status
+was `SUCCESS` with 218 confirmations, and the wallet's WETH balance already reflected the
+swapped funds. Explained the actual mechanic: "Batch pending" is Orbit-chain L1 batch
+settlement (an async, automatic finality step against the parent chain) — a completely
+separate, non-blocking process from the L2 transaction itself, which had already succeeded
+in <1s. No bug here either, just an L2/L1 finality concept that isn't obvious to a non-crypto
+user.
+
+**The one thing that *was* actually broken, found while digging into "why did Buy show 0":**
+the user tried selling 123 RWD and the "Buy" amount showed literally `0`. Queried the deployed
+`WethRwdPool` contract's own `getAmountOut(123 RWD, ...)` directly — the real on-chain result
+is `0.000000079768410095 WETH`, i.e. genuinely tiny (the pool's WETH side is down to
+`~0.0000000876 WETH` after prior swaps) but **not zero**. `SwapPanel.tsx`'s "Buy" preview and
+the `"1 X ≈ Y"` rate line were using `formatToken(value, 6)` — a fixed 6-decimal formatter that
+rounds anything under 0.000001 down to a bare "0", which reads as "you'd get nothing" even
+though the real, executable trade returns a nonzero (if tiny) amount. Fixed by switching both
+call sites to `formatTokenSmart` (already defined in `lib/format.ts` and already used by
+`PoolPanel.tsx`'s reserve tiles for this exact "reserves can be extremely lopsided on a
+shallow testnet pool" problem — same fix, just not yet applied in `SwapPanel.tsx` when it was
+built). No fund-loss risk existed at any point — the swap's actual `amountOutMin` (via
+`withSlippage`) was always computed from the correct, non-rounded bigint; only the *display*
+was misleading.
+
+Verified the exact corrected numbers directly against the contract's own `getAmountOut` (a
+`pure` function, callable read-only) rather than trusting a re-implementation — this is the
+strongest form of verification available for AMM math and is worth reaching for again before
+trusting any client-side preview math when a pool is this thin. Live in-browser re-verification
+of the fixed UI was attempted but blocked by the public testnet RPC being unresponsive at the
+time (reserve reads stuck on "—" locally, in two independent fresh tabs, no console errors,
+`tsc` clean) — the same transient RPC flakiness already documented earlier in this file;
+not a regression from this change.
+
 ### 14. Pre-mint RWD to 10,000 total supply (2026-07-16)
 
 Boss (Uriah) asked to "start the supply at 10,000 RWD" so tokens can be "bought without
