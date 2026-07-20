@@ -25,6 +25,7 @@ const navEntries: NavEntry[] = [
     label: "More",
     items: [
       { href: "/tokenomics", label: "Tokenomics" },
+      { href: "/emissions", label: "Emissions" },
       { href: "/#security", label: "Security" },
     ],
   },

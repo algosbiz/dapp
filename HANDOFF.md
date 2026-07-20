@@ -385,6 +385,56 @@ time (reserve reads stuck on "—" locally, in two independent fresh tabs, no co
 `tsc` clean) — the same transient RPC flakiness already documented earlier in this file;
 not a regression from this change.
 
+### 18. Full data-source audit + new read-only "Emissions & Supply" page (2026-07-20)
+
+Boss asked (via whiteboard) to be able to check *and* manually change RWD supply and
+emission rates from the web, self-service. Audited every contract read in the app first
+(every hook + component, cross-checked against a live on-chain script per contract) before
+building anything — everything was already live/correct except the two already-known,
+unfixable gaps (7d/30d minted needs the snapshot file; the RwdPricePill is deliberately
+mocked). No code changes came out of the audit itself, just confirmation nothing else was
+silently stale.
+
+For the "change it" half, checked what the deployed contracts actually support without a
+redeploy:
+- `MasterChef.updateEmissionRate(uint256)` — **exists**, `onlyOwner`, already settles all
+  pools before switching rates so past rewards keep accruing at the old rate correctly.
+- `MasterChef.ownerMint(address, uint256)` — **exists** (used for the earlier 10k pre-mint).
+- **No burn function anywhere** — `RewardToken` is uncapped/mintable by design with no burn
+  at all, not even an owner-gated one. Supply can only ever be *increased* from this UI;
+  decreasing/"setting to X" would need a new token contract and a migration, not just a UI.
+- `WethStakingRewards` (`/stake` and `/stake-rwd`) has **no direct rate setter** — rate is a
+  side effect of `notifyRewardAmount(totalRewardForNextPeriod)`, which requires the contract
+  to already hold enough reward tokens to cover `rate × rewardsDuration` (a solvency check).
+  Changing the rate here is a two-step operation (fund, then declare), not a single field.
+
+**Decision needed before building any write-capable panel:** every one of the above is
+`onlyOwner`, and the current owner is the **deployer wallet** (which only this session's
+`.env` can sign for), not the boss's wallet. A self-service web panel would only actually be
+clickable by whoever holds that key — building "buttons" wouldn't give the boss real
+self-service unless ownership were transferred to a wallet he controls, which is a real,
+mostly-irreversible security decision (`WethStakingRewards` uses one-step `Ownable` —
+transferring to a mistyped address loses the contract's admin capability permanently;
+`MasterChef` at least uses `Ownable2Step`, requiring the new owner to accept). **Asked the
+user directly; they chose to keep execution with the dev/deployer wallet** (same pattern as
+every owner-action this whole session — request in chat, executed via a one-off script,
+verified on-chain, reported back) rather than transfer control. Given that, a write-enabled
+web panel would add real attack surface (and UI complexity) for zero actual self-service
+benefit, since nobody but this session can sign for it either way — so no mint/rate-change
+UI was built.
+
+Built the "check" half instead: new `/emissions` page (`EmissionsPanel.tsx`, a Server
+Component, no wallet needed) showing, all read live on every page load: total RWD supply;
+farm-wide emission rate plus its 50/50 split across the WETH and LP pools (via `poolInfo`'s
+`allocPoint` vs `totalAllocPoint`); and `/stake` + `/stake-rwd`'s reward rates plus their
+funding status (`periodFinish` vs now — "Funded until …" in green, "Funding period ended …"
+in red if the stream ran out). Linked from the navbar's "More" dropdown. Verified every
+number against a live on-chain script before and after — including catching what looked
+like a stale value on first load (12,008.805 vs a script's 14,132.395) that turned out to
+just be ~30 seconds of real continuous mint activity between the two reads, not a caching
+bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
+that changes every second.
+
 ### 17. "Total RWD supply" now reads live, not from yesterday's snapshot
 
 User pointed at the block explorer showing `totalSupply() = 12,008.805 RWD` on the actual
