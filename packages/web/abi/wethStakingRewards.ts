@@ -71,6 +71,13 @@ export const wethStakingRewardsAbi = [
   },
   {
     type: "function",
+    name: "rewardsDuration",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "stakingToken",
     stateMutability: "view",
     inputs: [],

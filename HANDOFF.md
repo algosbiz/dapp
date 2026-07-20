@@ -1,6 +1,6 @@
 # HANDOFF — WETH Staking / MasterChef farm / RWD-for-RWD pool / WETH-RWD AMM (Robinhood Chain)
 
-_Last updated: 2026-07-16. Repo is now on GitHub: https://github.com/algosbiz/dapp_
+_Last updated: 2026-07-20. Repo is now on GitHub: https://github.com/algosbiz/dapp_
 
 ## Current state (2026-07-15)
 
@@ -435,6 +435,62 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
+### 19. Emission-rate "request" form + an app-wide wrong-chain bug found while building it (2026-07-20)
+
+Boss reopened the question from #18: still wanted *some* UI-based way to change the emission
+rate, asking if a specific wallet could just be authorized for that one action. Re-explained
+the same binary owner/not-owner limitation — these contracts have no concept of a scoped
+"can change rate but nothing else" permission, so "authorize a wallet for rate changes" is
+technically identical to making that wallet the full owner (mint, pause, recover-ERC20,
+everything). Presented two honest options via `AskUserQuestion`; user picked the safer one:
+**a "compile a request" form, not a real write path.** `EmissionRateRequestForm.tsx` (added to
+`/emissions`, under the existing read-only `EmissionsPanel`) lets you pick a target pool and a
+desired new rate, shows the current on-chain rate for comparison, and produces a
+copy-pasteable summary (contract address, current vs. requested rate, per-day equivalent, a
+per-target note on how that rate is actually mechanically changed) to hand to whoever executes
+it (i.e., paste back into this chat). The form itself never signs or sends anything.
+
+**Bug found while verifying it, not by inspection.** The form's three `useReadContract` calls
+(farm rate, `/stake` rate, `/stake-rwd` rate) all showed "Current rate: —" even after a full
+reload, despite being structurally identical to `useFarm.ts`'s `rewardPerSecond` read — assumed
+safe to copy since that one is "proven working on `/farm`". A live network trace
+(`read_network_requests`, not a guess) showed the client-side reads were hitting
+`rpc.mainnet.chain.robinhood.com`, not testnet. Re-tested `/farm` itself the same way,
+disconnected: **it showed the same "—" right now.** The earlier "proven working" observation
+from earlier in this session must have happened with a wallet actively connected to testnet,
+which made the bug invisible at the time.
+
+Root cause: `wagmiConfig.chains` (`config/wagmi.ts`) listed `robinhoodChain` (mainnet, id 4663,
+no contracts deployed there yet) *before* `robinhoodTestnet` (id 46630, where every contract
+actually lives). wagmi's `useReadContract` with no explicit `chainId` uses the current chain,
+which falls back to `chains[0]` whenever no wallet is connected — so **every disconnected
+client-side read in the entire app** (32 call sites across 8 files: `useFarm.ts`,
+`useStaking.ts`, `useRwdStaking.ts`, `useWethRwdPool.ts`, `useWrap.ts`, `FarmDashboard.tsx`,
+`TokenomicsCalculator.tsx`, plus this new form) was silently querying the wrong chain, not just
+the new form. It only ever looked correct because most testing this session happened with a
+wallet connected to testnet, which overrides the disconnected fallback.
+
+Fixed with a single, low-risk change: reordered `chains: [robinhoodChain, robinhoodTestnet,
+hardhatLocal]` → `[robinhoodTestnet, robinhoodChain, hardhatLocal]` in `config/wagmi.ts` — this
+makes the disconnected fallback resolve to testnet everywhere at once, without touching the 32
+individual call sites (mainnet + hardhat stay available in the wallet's own network switcher;
+mainnet just isn't the *default* anymore). Chose this over adding an explicit `chainId` to
+every read: same fix, far smaller diff, and matches the fact that this app is testnet-only in
+practice right now (the comment already in that file says to drop `robinhoodChain` entirely
+once this ever goes to production).
+
+Verified, not assumed: cleared the network log, reloaded `/emissions` disconnected — all 3
+reads now hit `rpc.testnet.chain.robinhood.com`, "Current rate" shows real numbers (0.01
+RWD/sec farm, 0.001157 tRWD/sec stake, 0.000116 RWD/sec stake-rwd — matching the
+`EmissionsPanel` figures directly above). Re-checked `/farm` too — the emission-rate and APR
+tiles that showed "—" before the fix now show real numbers (0.01 RWD/sec, 422.89% APR)
+disconnected. Spot-checked `/stake`, `/stake-rwd`, `/pool`, `/wrap`, `/tokenomics` for
+regressions — all read live data correctly, nothing broke. Full form flow verified end-to-end
+including the clipboard: entering a new rate populates the "≈ X/day" preview and a compiled
+summary textarea correctly, and "Copy request" puts the exact right text on the clipboard
+(confirmed via `navigator.clipboard.readText()` readback, not just the button's own "Copied!"
+label).
+
 ### 17. "Total RWD supply" now reads live, not from yesterday's snapshot
 
 User pointed at the block explorer showing `totalSupply() = 12,008.805 RWD` on the actual
@@ -680,3 +736,10 @@ npm run contracts:snapshot            # manual snapshot run (root package.json a
 - This session's auto-mode permission classifier blocks on-chain mint/redeploy actions and
   git commit/push as "shared resource" changes, even mid-plan — expect to re-confirm with
   the user at each of those steps rather than assuming plan approval covers them.
+- The Chrome-automation `computer` tool's `screenshot` pixel coordinates are **not**
+  guaranteed to match the real viewport's CSS pixel coordinates (seen: 1568×718 screenshot vs.
+  an actual 1707×781 viewport) — clicking at a coordinate that visually looked right in a
+  screenshot can silently miss the target element. If a click-driven UI test isn't producing
+  the expected effect, don't conclude the app is broken from that alone: cross-check with a
+  direct DOM dispatch (`el.click()` via `javascript_tool`) or a fresh `find` ref before
+  suspecting the component's own logic.
