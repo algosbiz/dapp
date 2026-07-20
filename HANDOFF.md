@@ -476,6 +476,25 @@ Note for future sessions: the design hook flags this file's literal 9–10px mon
 clamp() display sizes as off-DESIGN.md-ramp — that's the baseline landing's established
 type language (pre-existing, deliberately preserved), not drift introduced by this rework.
 
+**Bug found & fixed during browser QA (same commit):** the four post-film sections
+(system / routes / security / CTA) were shipping **blank** — stuck at `opacity:0;
+visibility:hidden`. Root cause: the baseline's generic reveal used `gsap.from(el,
+{autoAlpha:0, scrollTrigger:{start:"top 86%"}})`, which sets the element to opacity 0
+immediately and depends on the trigger firing to bring it back — but the 800svh pinned film
+ScrollTrigger above it throws off the reveal triggers' computed start positions, so the
+reveal never fires and the content stays invisible (exactly the "don't gate visibility on a
+scroll transition" trap the impeccable skill warns about). This was almost certainly latent
+in the baseline too, just never caught. Fixed by switching to `gsap.fromTo(el,
+{autoAlpha:0,y:42}, {autoAlpha:1,y:0, immediateRender:false, scrollTrigger:{start:"top 90%",
+once:true}})` — `immediateRender:false` keeps the element at its natural *visible* state
+until the trigger actually fires, so a reveal that never runs still ships the content
+visible instead of blank. Verified via DOM inspection (all 8 `[data-reveal]` blocks report
+`opacity:1; visibility:visible` after scrolling through). **Testing caveat:** the
+`claude-in-chrome` screenshot tool renders this page (large fixed canvas + pinned sections)
+as blank canvas-soft even when the DOM is fully painted — confirmed by `getComputedStyle` +
+`elementFromPoint` returning the real visible content. Trust DOM inspection over screenshots
+on this page; see the `browser-tool-coordinate-mismatch` memory.
+
 ### 19. Emission-rate "request" form + an app-wide wrong-chain bug found while building it (2026-07-20)
 
 Boss reopened the question from #18: still wanted *some* UI-based way to change the emission

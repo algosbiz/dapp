@@ -317,13 +317,22 @@ export function ImmersiveLanding() {
       }
 
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
-        gsap.from(element, {
-          autoAlpha: 0,
-          y: 42,
-          duration: 0.85,
-          ease: "power3.out",
-          scrollTrigger: { trigger: element, start: "top 86%" },
-        });
+        // immediateRender:false keeps the element at its natural (visible) state until the
+        // trigger actually fires — so a reveal that never runs (fast scroll past it, the
+        // long pinned film section throwing off start positions, a hidden tab) still ships
+        // the content visible instead of stuck at opacity:0. once:true settles it for good.
+        gsap.fromTo(
+          element,
+          { autoAlpha: 0, y: 42 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.85,
+            ease: "power3.out",
+            immediateRender: false,
+            scrollTrigger: { trigger: element, start: "top 90%", once: true },
+          }
+        );
       });
 
       gsap.to("[data-ticker-track]", {
