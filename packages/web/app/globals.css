@@ -12,6 +12,51 @@ body {
   color: #0e0f0c;
 }
 
+.weth-film-frame {
+  opacity: 0;
+}
+
+.weth-film-frame:first-child {
+  opacity: 1;
+}
+
+.weth-film-frame img {
+  filter: saturate(0.96) contrast(1.02);
+}
+
+.weth-film-wash {
+  background:
+    linear-gradient(180deg, rgb(246 243 232 / 0.06) 0%, transparent 28%, transparent 68%, rgb(246 243 232 / 0.13) 100%),
+    radial-gradient(circle at 10% 78%, rgb(246 243 232 / 0.26), transparent 34%),
+    radial-gradient(circle at 88% 78%, rgb(246 243 232 / 0.2), transparent 32%);
+}
+
+.weth-film-grain {
+  background-image:
+    repeating-radial-gradient(circle at 17% 32%, transparent 0, rgb(14 15 12 / 0.2) 0.65px, transparent 1.2px, transparent 4px),
+    repeating-radial-gradient(circle at 71% 68%, transparent 0, rgb(255 255 255 / 0.24) 0.6px, transparent 1.1px, transparent 5px);
+  background-size: 7px 7px, 9px 9px;
+  mix-blend-mode: soft-light;
+}
+
+.weth-film-copy {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  text-shadow: 0 1px 26px rgb(246 243 232 / 0.38);
+}
+
+.weth-film-copy::before {
+  position: absolute;
+  inset: -4rem -6rem;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(246 243 232 / 0.62) 0%, rgb(246 243 232 / 0.28) 46%, transparent 72%);
+  filter: blur(28px);
+  content: "";
+}
+
 .landing-scene canvas {
   display: block;
   height: 100%;
@@ -93,5 +138,19 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .weth-film-frame img {
+    object-position: center;
+  }
+
+  .weth-film-wash {
+    background: linear-gradient(180deg, transparent 20%, rgb(246 243 232 / 0.08) 45%, rgb(246 243 232 / 0.74) 100%);
+  }
+
+  .weth-film-copy {
+    text-shadow: 0 1px 20px rgb(246 243 232 / 0.65);
   }
 }
