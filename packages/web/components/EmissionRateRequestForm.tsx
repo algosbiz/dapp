@@ -102,9 +102,9 @@ export function EmissionRateRequestForm() {
     <div className="rounded-card bg-canvas p-6 shadow-card sm:p-8">
       <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">Request a rate change</h2>
       <p className="mt-1 text-sm text-ink-body">
-        Fill this in, then copy the summary to whoever manages the contracts (e.g. paste it
-        into your chat with Claude). This form doesn't change anything by itself — every
-        setting here is owner-only, so a person still applies it after review.
+        Fill this in, then copy the summary and send it to the admin who manages the
+        contracts. This form doesn't change anything by itself — every setting here is
+        owner-only, so a person still applies it after review.
       </p>
 
       <div className="mt-5 space-y-4">
