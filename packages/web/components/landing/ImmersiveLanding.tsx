@@ -1,9 +1,22 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+/**
+ * The protocol film: a 10s night sequence (husky howling at the moon) cut into
+ * 160 webp frames, scrubbed by scroll — frame index follows scroll progress, so
+ * scrolling literally plays the film forward and backward. Regenerate with:
+ *   ffmpeg -i dog.mp4 -vf "fps=16" -c:v libwebp -quality 72 -an frame_%03d.webp
+ */
+const FRAME_COUNT = 160;
+/** Frames that must arrive before the intro reveals; the rest stream in behind. */
+const REVEAL_AT = 24;
+
+const framePath = (index: number) =>
+  `/landing/film/frames/frame_${String(index + 1).padStart(3, "0")}.webp`;
 
 const FILM_CHAPTERS = [
   {
@@ -12,8 +25,6 @@ const FILM_CHAPTERS = [
     kicker: "ETH, made liquid",
     title: "Start with ETH. Make it move.",
     body: "Wrap ETH one-to-one into WETH—the liquid format built to travel through every route in the protocol.",
-    image: "/landing/film/weth-origin.png",
-    objectPosition: "center",
     align: "left",
     accent: "Make it move.",
   },
@@ -23,8 +34,6 @@ const FILM_CHAPTERS = [
     kicker: "One token · every route",
     title: "Wrapped once. Ready everywhere.",
     body: "The same self-custodied position can enter staking, farming, liquidity, and compounding without changing its base asset.",
-    image: "/landing/film/weth-wrapped.png",
-    objectPosition: "center",
     align: "right",
     accent: "Ready everywhere.",
   },
@@ -34,8 +43,6 @@ const FILM_CHAPTERS = [
     kicker: "Time becomes yield",
     title: "Every second leaves a trace.",
     body: "Rewards accrue continuously and stay visible from the wallet—no private balance sheet between you and the contracts.",
-    image: "/landing/film/weth-rewards.png",
-    objectPosition: "center",
     align: "left",
     accent: "leaves a trace.",
   },
@@ -43,12 +50,10 @@ const FILM_CHAPTERS = [
     number: "04",
     label: "The loop",
     kicker: "Liquidity · composability · control",
-    title: "Trade. Pair. Earn again.",
+    title: "Trade. Pair. To the moon.",
     body: "Move between WETH and RWD, provide focused liquidity, then put the LP position back to work—all from one wallet.",
-    image: "/landing/film/weth-liquidity.png",
-    objectPosition: "center",
     align: "right",
-    accent: "Earn again.",
+    accent: "To the moon.",
   },
 ] as const;
 
@@ -95,26 +100,26 @@ function Arrow({ diagonal = false }: { diagonal?: boolean }) {
 }
 
 function FilmLoader({ loaded, ready }: { loaded: number; ready: boolean }) {
-  const percent = Math.min(100, Math.round((loaded / FILM_CHAPTERS.length) * 100));
+  const percent = Math.min(100, Math.round((loaded / FRAME_COUNT) * 100));
 
   return (
     <div
       aria-hidden={ready}
-      className={`fixed inset-0 z-[100] grid place-items-center bg-brand transition-[opacity,visibility] duration-700 ${
+      className={`fixed inset-0 z-[100] grid place-items-center bg-ink transition-[opacity,visibility] duration-700 ${
         ready ? "invisible pointer-events-none opacity-0" : "visible opacity-100"
       }`}
     >
       <div className="w-[min(24rem,76vw)] text-center">
-        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-ink font-display text-2xl font-extrabold text-brand shadow-[0_20px_60px_rgba(14,15,12,0.2)]">
+        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand font-display text-2xl font-extrabold text-ink shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
           W
         </div>
-        <div className="mt-9 h-px overflow-hidden bg-ink/20">
+        <div className="mt-9 h-px overflow-hidden bg-canvas/15">
           <span
-            className="block h-full bg-ink transition-[width] duration-300 ease-out"
+            className="block h-full bg-brand transition-[width] duration-300 ease-out"
             style={{ width: `${percent}%` }}
           />
         </div>
-        <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-ink/65">
+        <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-canvas/60">
           Loading protocol film — {percent}%
         </p>
       </div>
@@ -124,27 +129,112 @@ function FilmLoader({ loaded, ready }: { loaded: number; ready: boolean }) {
 
 export function ImmersiveLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const loadedRef = useRef(new Set<string>());
-  const [loadedAssets, setLoadedAssets] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const framesRef = useRef<(HTMLImageElement | null)[]>([]);
+  const currentFrameRef = useRef(0);
+  const [loadedFrames, setLoadedFrames] = useState(0);
   const [introReady, setIntroReady] = useState(false);
 
-  const markAsset = (src: string) => {
-    if (loadedRef.current.has(src)) return;
-    loadedRef.current.add(src);
-    setLoadedAssets(loadedRef.current.size);
-  };
+  /** Draws the frame nearest to `frameFloat` that has finished loading, cover-fit. */
+  const drawFrame = useCallback((frameFloat: number) => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+
+    const target = Math.round(Math.min(FRAME_COUNT - 1, Math.max(0, frameFloat)));
+    currentFrameRef.current = target;
+
+    const frames = framesRef.current;
+    let image: HTMLImageElement | null = null;
+    for (let i = target; i >= 0; i -= 1) {
+      if (frames[i]) {
+        image = frames[i];
+        break;
+      }
+    }
+    if (!image) {
+      for (let i = target + 1; i < FRAME_COUNT; i += 1) {
+        if (frames[i]) {
+          image = frames[i];
+          break;
+        }
+      }
+    }
+    if (!image) return;
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+  }, []);
+
+  // Preload the full sequence once; each arrival bumps the loader and, when it's
+  // the frame currently on screen (or an earlier stand-in for it), redraws.
+  useEffect(() => {
+    let cancelled = false;
+    const images: (HTMLImageElement | null)[] = new Array(FRAME_COUNT).fill(null);
+    framesRef.current = images;
+    let loaded = 0;
+
+    for (let i = 0; i < FRAME_COUNT; i += 1) {
+      const image = new Image();
+      image.decoding = "async";
+      image.onload = () => {
+        if (cancelled) return;
+        images[i] = image;
+        loaded += 1;
+        setLoadedFrames(loaded);
+        if (i <= currentFrameRef.current + 1) drawFrame(currentFrameRef.current);
+      };
+      image.onerror = () => {
+        if (cancelled) return;
+        loaded += 1;
+        setLoadedFrames(loaded);
+      };
+      image.src = framePath(i);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [drawFrame]);
+
+  // Canvas sizing is independent of motion preferences: even the reduced-motion
+  // experience shows a static opening frame.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+
+    const resize = () => {
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * ratio);
+      canvas.height = Math.round(rect.height * ratio);
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawFrame(currentFrameRef.current);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [drawFrame]);
 
   useEffect(() => {
-    const fallback = window.setTimeout(() => setIntroReady(true), 5000);
-    if (loadedAssets >= 2) {
-      const reveal = window.setTimeout(() => setIntroReady(true), 320);
+    const fallback = window.setTimeout(() => setIntroReady(true), 8000);
+    if (loadedFrames >= Math.min(REVEAL_AT, FRAME_COUNT)) {
+      const reveal = window.setTimeout(() => setIntroReady(true), 260);
       return () => {
         window.clearTimeout(reveal);
         window.clearTimeout(fallback);
       };
     }
     return () => window.clearTimeout(fallback);
-  }, [loadedAssets]);
+  }, [loadedFrames]);
 
   useEffect(() => {
     if (introReady) return;
@@ -163,30 +253,21 @@ export function ImmersiveLanding() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const context = gsap.context(() => {
-      const frames = gsap.utils.toArray<HTMLElement>("[data-film-frame]");
       const railItems = gsap.utils.toArray<HTMLElement>("[data-film-rail-item]");
       const scenes = gsap.utils.toArray<HTMLElement>("[data-film-scene]");
       const firstCopy = scenes[0]?.querySelectorAll<HTMLElement>("[data-film-reveal]");
-
-      gsap.set(frames, { autoAlpha: 0, scale: 1.07 });
-      gsap.set(frames[0], { autoAlpha: 1, scale: 1 });
 
       const filmTrigger = ScrollTrigger.create({
         trigger: "[data-film-story]",
         start: "top 65px",
         end: "bottom bottom",
         onUpdate: (self) => {
-          const phase = self.progress * (frames.length - 1);
-          const active = Math.min(frames.length - 1, Math.round(phase));
+          drawFrame(self.progress * (FRAME_COUNT - 1));
 
-          frames.forEach((frame, index) => {
-            const visibility = gsap.utils.clamp(0, 1, 1 - Math.abs(index - phase));
-            gsap.set(frame, {
-              autoAlpha: visibility,
-              scale: 1.075 - visibility * 0.075,
-            });
-          });
-
+          const active = Math.min(
+            FILM_CHAPTERS.length - 1,
+            Math.floor(self.progress * FILM_CHAPTERS.length)
+          );
           railItems.forEach((item, index) => {
             item.dataset.active = index === active ? "true" : "false";
           });
@@ -272,42 +353,24 @@ export function ImmersiveLanding() {
 
     ScrollTrigger.refresh();
     return () => context.revert();
-  }, [introReady]);
+  }, [introReady, drawFrame]);
 
   return (
     <div ref={rootRef} data-weth-film className="relative isolate overflow-clip bg-canvas-soft">
-      <FilmLoader loaded={loadedAssets} ready={introReady} />
+      <FilmLoader loaded={loadedFrames} ready={introReady} />
 
-      <section data-film-story className="relative h-[800svh] bg-brand">
-        <div className="sticky top-[65px] h-[calc(100svh-65px)] overflow-hidden bg-brand">
+      <section data-film-story className="relative h-[800svh] bg-ink">
+        <div className="sticky top-[65px] h-[calc(100svh-65px)] overflow-hidden bg-ink">
           <div data-film-parallax className="absolute -inset-3">
-            {FILM_CHAPTERS.map((chapter, index) => (
-              <div
-                key={chapter.number}
-                data-film-frame
-                className="weth-film-frame absolute inset-0 will-change-[opacity,transform]"
-              >
-                {/* Generated project artwork is decorative; chapter copy carries the meaning. */}
-                <img
-                  src={chapter.image}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: chapter.objectPosition }}
-                  loading={index < 2 ? "eager" : "lazy"}
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  onLoad={() => markAsset(chapter.image)}
-                  onError={() => markAsset(chapter.image)}
-                />
-              </div>
-            ))}
+            {/* The film itself is decorative; chapter copy carries the meaning. */}
+            <canvas ref={canvasRef} aria-hidden="true" className="block h-full w-full" />
           </div>
 
           <div className="weth-film-wash pointer-events-none absolute inset-0" />
-          <div className="weth-film-grain pointer-events-none absolute inset-0 opacity-[0.1]" />
+          <div className="weth-film-grain pointer-events-none absolute inset-0 opacity-[0.12]" />
 
-          <div className="absolute left-4 top-5 z-20 flex items-center gap-2 rounded-full border border-ink/15 bg-canvas/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-ink backdrop-blur-md sm:left-6">
-            <span className="h-2 w-2 rounded-full bg-positive" />
+          <div className="absolute left-4 top-5 z-20 flex items-center gap-2 rounded-full border border-canvas/20 bg-ink/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-canvas backdrop-blur-md sm:left-6">
+            <span className="h-2 w-2 rounded-full bg-brand" />
             WETH-1 · protocol film
           </div>
 
@@ -319,10 +382,10 @@ export function ImmersiveLanding() {
                 data-active={index === 0 ? "true" : "false"}
                 className="group flex items-center gap-3"
               >
-                <span className="hidden font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-ink opacity-0 transition-opacity group-data-[active=true]:opacity-100 md:block">
+                <span className="hidden font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-canvas opacity-0 transition-opacity group-data-[active=true]:opacity-100 md:block">
                   {chapter.label}
                 </span>
-                <span className="h-1.5 w-1.5 rounded-full bg-ink/35 transition-[transform,background-color] group-data-[active=true]:scale-[1.8] group-data-[active=true]:bg-ink" />
+                <span className="h-1.5 w-1.5 rounded-full bg-canvas/35 transition-[transform,background-color] group-data-[active=true]:scale-[1.8] group-data-[active=true]:bg-canvas" />
               </div>
             ))}
           </div>
@@ -341,21 +404,21 @@ export function ImmersiveLanding() {
                   }`}
                 >
                   <div className={`weth-film-copy w-full max-w-[42rem] ${rightAligned ? "items-end" : "items-start"}`}>
-                    <p data-film-reveal className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-ink">
+                    <p data-film-reveal className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-brand">
                       {chapter.number} · {chapter.kicker}
                     </p>
                     <h1
                       data-film-reveal
-                      className="mt-5 text-balance font-display text-[clamp(2.75rem,7.4vw,7rem)] font-extrabold leading-[0.86] tracking-[-0.065em] text-ink sm:text-[clamp(3.25rem,7.4vw,7rem)]"
+                      className="mt-5 text-balance font-display text-[clamp(2.75rem,7.4vw,6rem)] font-extrabold leading-[0.88] tracking-[-0.04em] text-canvas"
                     >
                       {beforeAccent}
-                      <span className="font-sans font-medium italic text-positive-deep drop-shadow-[0_2px_18px_rgba(246,243,232,0.6)]">
+                      <span className="font-sans font-medium italic text-brand drop-shadow-[0_2px_18px_rgba(14,15,12,0.65)]">
                         {chapter.accent}
                       </span>
                     </h1>
                     <p
                       data-film-reveal
-                      className={`mt-6 w-full text-pretty text-base font-medium leading-relaxed text-ink/70 sm:text-lg ${
+                      className={`mt-6 w-full text-pretty text-base font-medium leading-relaxed text-canvas/80 sm:text-lg ${
                         rightAligned ? "ml-auto" : ""
                       }`}
                       style={{ maxWidth: "min(35rem, calc(100vw - 3.5rem))" }}
@@ -365,20 +428,20 @@ export function ImmersiveLanding() {
 
                     {index === 0 && (
                       <div data-film-reveal className={`mt-7 flex flex-wrap gap-3 ${rightAligned ? "justify-end" : ""}`}>
-                        <Link href="/stake" className="inline-flex items-center gap-3 rounded-full bg-ink px-5 py-3 text-sm font-bold text-canvas transition-transform hover:-translate-y-0.5">
-                          Launch app <span className="text-brand"><Arrow /></span>
+                        <Link href="/stake" className="inline-flex items-center gap-3 rounded-full bg-brand px-5 py-3 text-sm font-bold text-ink transition-transform hover:-translate-y-0.5">
+                          Launch app <Arrow />
                         </Link>
-                        <Link href="/wrap" className="rounded-full border border-ink/20 bg-canvas/65 px-5 py-3 text-sm font-bold text-ink backdrop-blur-md transition-colors hover:bg-canvas">
+                        <Link href="/wrap" className="rounded-full border border-canvas/25 bg-ink/35 px-5 py-3 text-sm font-bold text-canvas backdrop-blur-md transition-colors hover:bg-ink/60">
                           Wrap ETH
                         </Link>
                       </div>
                     )}
 
                     {index === 0 && (
-                      <div data-film-reveal className="mt-8 flex items-center gap-3 font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-ink/55">
+                      <div data-film-reveal className="mt-8 flex items-center gap-3 font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-canvas/60">
                         Scroll to run the film
-                        <span className="h-8 w-px overflow-hidden bg-ink/20">
-                          <span className="landing-scroll-pulse block h-2 w-px bg-ink" />
+                        <span className="h-8 w-px overflow-hidden bg-canvas/20">
+                          <span className="landing-scroll-pulse block h-2 w-px bg-canvas" />
                         </span>
                       </div>
                     )}
@@ -391,7 +454,7 @@ export function ImmersiveLanding() {
       </section>
 
       <section data-ticker className="relative z-20 overflow-hidden border-y border-canvas/15 bg-ink py-6 text-brand">
-        <div data-ticker-track className="flex w-max items-center gap-8 whitespace-nowrap font-display text-5xl font-extrabold uppercase tracking-[-0.06em] sm:text-7xl">
+        <div data-ticker-track className="flex w-max items-center gap-8 whitespace-nowrap font-display text-5xl font-extrabold uppercase tracking-[-0.04em] sm:text-7xl">
           {Array.from({ length: 3 }).map((_, index) => (
             <span key={index} className="flex items-center gap-8">
               Wrap <i className="h-3 w-3 rounded-full bg-canvas" /> Stake <i className="h-3 w-3 rounded-full bg-canvas" /> Farm <i className="h-3 w-3 rounded-full bg-canvas" /> Pair <i className="h-3 w-3 rounded-full bg-canvas" /> Compound <i className="h-3 w-3 rounded-full bg-canvas" />
@@ -405,7 +468,7 @@ export function ImmersiveLanding() {
           <div data-reveal className="grid gap-10 lg:grid-cols-[0.68fr_0.32fr] lg:items-end">
             <div>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-brand">After the film · the system</p>
-              <h2 className="mt-6 max-w-5xl text-balance font-display text-[clamp(3.5rem,8vw,7.6rem)] font-extrabold leading-[0.84] tracking-[-0.065em]">
+              <h2 className="mt-6 max-w-5xl text-balance font-display text-[clamp(3.5rem,8vw,6rem)] font-extrabold leading-[0.86] tracking-[-0.04em]">
                 One liquid asset. Several ways to put it to work.
               </h2>
             </div>
@@ -435,7 +498,7 @@ export function ImmersiveLanding() {
           <div data-reveal className="flex flex-col gap-6 border-b border-ink/15 pb-10 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-positive-deep">Choose your route</p>
-              <h2 className="mt-5 max-w-4xl text-balance font-display text-5xl font-extrabold leading-[0.88] tracking-[-0.055em] text-ink sm:text-7xl">
+              <h2 className="mt-5 max-w-4xl text-balance font-display text-5xl font-extrabold leading-[0.88] tracking-[-0.04em] text-ink sm:text-7xl">
                 The story keeps moving after the scroll.
               </h2>
             </div>
@@ -476,7 +539,7 @@ export function ImmersiveLanding() {
         <div data-reveal className="mx-auto grid max-w-container gap-10 lg:grid-cols-[0.65fr_0.35fr] lg:items-end">
           <div>
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-positive-deep">Protocol note 01</p>
-            <h2 className="mt-6 max-w-4xl text-balance font-display text-5xl font-extrabold leading-[0.87] tracking-[-0.055em] text-ink sm:text-7xl">
+            <h2 className="mt-6 max-w-4xl text-balance font-display text-5xl font-extrabold leading-[0.87] tracking-[-0.04em] text-ink sm:text-7xl">
               Control is not a promise. It is the exit path.
             </h2>
           </div>
@@ -503,7 +566,7 @@ export function ImmersiveLanding() {
         <div data-reveal className="relative mx-auto max-w-container overflow-hidden rounded-[38px] bg-ink px-6 py-16 text-center text-canvas sm:px-10 sm:py-24">
           <div className="absolute left-1/2 top-0 h-64 w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/30 blur-3xl" />
           <p className="relative font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-brand">The film ends · your position starts</p>
-          <h2 className="relative mx-auto mt-6 max-w-5xl text-balance font-display text-5xl font-extrabold leading-[0.87] tracking-[-0.055em] sm:text-7xl">
+          <h2 className="relative mx-auto mt-6 max-w-5xl text-balance font-display text-5xl font-extrabold leading-[0.87] tracking-[-0.04em] sm:text-7xl">
             Put the liquid asset engine to work.
           </h2>
           <p className="relative mx-auto mt-6 max-w-xl text-lg leading-relaxed text-canvas-soft/65">

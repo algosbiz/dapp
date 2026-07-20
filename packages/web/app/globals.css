@@ -12,23 +12,11 @@ body {
   color: #0e0f0c;
 }
 
-.weth-film-frame {
-  opacity: 0;
-}
-
-.weth-film-frame:first-child {
-  opacity: 1;
-}
-
-.weth-film-frame img {
-  filter: saturate(0.96) contrast(1.02);
-}
-
+/* Night-footage legibility layer: subtle top fade + a heavier floor gradient
+   under the chapter copy, so light type stays readable over any frame. */
 .weth-film-wash {
   background:
-    linear-gradient(180deg, rgb(246 243 232 / 0.06) 0%, transparent 28%, transparent 68%, rgb(246 243 232 / 0.13) 100%),
-    radial-gradient(circle at 10% 78%, rgb(246 243 232 / 0.26), transparent 34%),
-    radial-gradient(circle at 88% 78%, rgb(246 243 232 / 0.2), transparent 32%);
+    linear-gradient(180deg, rgb(14 15 12 / 0.44) 0%, rgb(14 15 12 / 0.08) 26%, transparent 52%, rgb(14 15 12 / 0.58) 100%);
 }
 
 .weth-film-grain {
@@ -44,7 +32,7 @@ body {
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  text-shadow: 0 1px 26px rgb(246 243 232 / 0.38);
+  text-shadow: 0 2px 28px rgb(14 15 12 / 0.6);
 }
 
 .weth-film-copy::before {
@@ -52,8 +40,8 @@ body {
   inset: -4rem -6rem;
   z-index: -1;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgb(246 243 232 / 0.62) 0%, rgb(246 243 232 / 0.28) 46%, transparent 72%);
-  filter: blur(28px);
+  background: radial-gradient(circle, rgb(14 15 12 / 0.5) 0%, rgb(14 15 12 / 0.26) 48%, transparent 74%);
+  filter: blur(30px);
   content: "";
 }
 
@@ -142,15 +130,12 @@ body {
 }
 
 @media (max-width: 767px) {
-  .weth-film-frame img {
-    object-position: center;
-  }
-
+  /* Copy sits lower and larger relative to the frame on phones — deepen the floor. */
   .weth-film-wash {
-    background: linear-gradient(180deg, transparent 20%, rgb(246 243 232 / 0.08) 45%, rgb(246 243 232 / 0.74) 100%);
+    background: linear-gradient(180deg, rgb(14 15 12 / 0.4) 0%, transparent 30%, rgb(14 15 12 / 0.24) 55%, rgb(14 15 12 / 0.72) 100%);
   }
 
   .weth-film-copy {
-    text-shadow: 0 1px 20px rgb(246 243 232 / 0.65);
+    text-shadow: 0 2px 20px rgb(14 15 12 / 0.7);
   }
 }

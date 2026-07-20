@@ -435,6 +435,47 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
+### 21. Homepage "protocol film" is now a real scroll-scrubbed frame sequence (2026-07-20, latest)
+
+User asked for a catwifcap.fun-style homepage: a video cut into hundreds of small webp
+frames, swapped by scroll position so scrolling literally plays the film forward/backward
+(the Apple-product-page technique). They supplied the footage themselves
+(`C:\Users\Gigabyte\Downloads\dog.mp4`, 10s 1280×720 24fps, AI-generated husky howling at
+the moon on a snowy peak — "to the moon", very much on purpose for a crypto site).
+
+**Asset pipeline (documented so it can be re-run):** `ffmpeg-static` added as a
+`packages/web` devDependency (no system ffmpeg on this machine). Cut with:
+`node_modules/ffmpeg-static/ffmpeg.exe -i dog.mp4 -vf "fps=16" -c:v libwebp -quality 72 -an
+packages/web/public/landing/film/frames/frame_%03d.webp` → **160 frames, 4.9 MB total**
+(24–35 kB each — catwifcap's range; lighter than the 7.3 MB of 4 PNGs it replaced). The
+frames are git-tracked (they ARE the asset); the source mp4 is not (only in Downloads —
+grab it before wiping that folder if re-cutting is ever needed).
+
+**What changed in `ImmersiveLanding.tsx`:** the film section's 4-still crossfade `<img>`
+stack became a single full-viewport `<canvas>` scrubber. All 160 frames preload up front
+(the existing "Loading protocol film — X%" overlay now counts real frames; page reveals at
+24 frames and streams the rest behind); the already-existing `[data-film-story]`
+ScrollTrigger's `onUpdate` now maps progress → frame index and draws cover-fit, falling
+back to the nearest already-loaded frame if scrolling outruns the network. Chapter-rail
+dots map progress → chapter independently of frame count. Reduced-motion users get a
+static first frame (canvas sizing/drawing deliberately lives outside the motion-gated
+effect). The 4 orphaned chapter PNGs were deleted (recoverable — the WIP crossfade version
+was committed first as baseline `22a7627` exactly so nothing is lost).
+
+**Design flip (footage is night-dark; the old design assumed light stills):** film act
+background `bg-brand` → `bg-ink`; chapter copy ink-on-light → canvas-on-dark with the
+brand lime as the accent color (kickers, italic accent spans, loader bar, primary CTA now
+`bg-brand`); `globals.css`'s `.weth-film-wash`/`.weth-film-copy` halo system inverted from
+cream glows to ink vignettes (desktop + the mobile media-query variant — the mobile block
+was easy to miss and was caught by the design hook). Chapter 04's title now lands the
+howl-at-the-moon climax: "Trade. Pair. To the moon." Display clamp max tightened 7rem →
+6rem and tracking -0.065em → -0.04em per the impeccable guardrails. Sections after the
+film (ticker/system/routes/security/CTA) untouched apart from those two type tweaks.
+
+Note for future sessions: the design hook flags this file's literal 9–10px mono labels and
+clamp() display sizes as off-DESIGN.md-ramp — that's the baseline landing's established
+type language (pre-existing, deliberately preserved), not drift introduced by this rework.
+
 ### 19. Emission-rate "request" form + an app-wide wrong-chain bug found while building it (2026-07-20)
 
 Boss reopened the question from #18: still wanted *some* UI-based way to change the emission
