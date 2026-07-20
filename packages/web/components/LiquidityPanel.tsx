@@ -72,6 +72,12 @@ export function LiquidityPanel() {
   const needsApproval0 = wethAllowance.data === undefined || wethAllowance.data < amount0;
   const needsApproval1 = rwdAllowance.data === undefined || rwdAllowance.data < amount1;
 
+  // The ratio-assist auto-fills the paired side from the pool's current price, which can
+  // demand far more of one token than the wallet actually holds on a lopsided pool — catch
+  // that before Add is clickable, rather than letting the transaction revert on-chain.
+  const insufficientWeth = wethBalance.data !== undefined && amount0 > wethBalance.data;
+  const insufficientRwd = rwdBalance.data !== undefined && amount1 > rwdBalance.data;
+
   const removeAmount = parseAmount(removeAmountStr);
   const removePreview = useMemo(() => {
     if (!totalSupply.data || totalSupply.data === 0n || reserve0 === undefined || reserve1 === undefined) {
@@ -167,7 +173,13 @@ export function LiquidityPanel() {
           </button>
           <button
             disabled={
-              needsApproval0 || needsApproval1 || amount0 === 0n || amount1 === 0n || isBusy
+              needsApproval0 ||
+              needsApproval1 ||
+              amount0 === 0n ||
+              amount1 === 0n ||
+              insufficientWeth ||
+              insufficientRwd ||
+              isBusy
             }
             onClick={() =>
               run("Add liquidity", () =>
@@ -179,6 +191,13 @@ export function LiquidityPanel() {
             <ButtonContent busy={activeLabel === "Add liquidity"} label="Add" busyLabel="Adding…" />
           </button>
         </div>
+
+        {(insufficientWeth || insufficientRwd) && (
+          <p className="text-xs font-semibold text-negative-deep">
+            The pool's current price means matching {insufficientWeth ? "that much RWD" : "that much WETH"}{" "}
+            needs more {insufficientWeth ? "WETH" : "RWD"} than your wallet holds. Try a smaller amount.
+          </p>
+        )}
       </div>
 
       {/* Remove liquidity */}

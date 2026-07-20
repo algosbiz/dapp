@@ -385,6 +385,27 @@ time (reserve reads stuck on "—" locally, in two independent fresh tabs, no co
 `tsc` clean) — the same transient RPC flakiness already documented earlier in this file;
 not a regression from this change.
 
+### 16. Add Liquidity — guard against ratio-assist demanding more than the wallet holds
+
+Same "is this also broken" check as #15, this time for the `/pool` Add/Remove Liquidity
+panel. Reproduced live on `dapp-web-phi.vercel.app` with the real connected wallet: typing
+`0.001` WETH auto-filled the RWD side (ratio-assist) to **137,031 RWD** — because the pool
+is now this lopsided (see #15's note on the drained WETH side) — while the wallet only held
+1,210 RWD. Nothing was actually broken (this is the same "empty inputs → disabled buttons"
+state as Swap's "Enter an amount", not a bug), but the "Add" button had no check against the
+wallet's *own* balance — a user who approved both tokens and clicked Add here would have hit
+an on-chain revert (insufficient RWD balance for the `transferFrom`), one more confusing
+"why did it fail" moment on top of everything else investigated today.
+
+Added `insufficientWeth`/`insufficientRwd` checks (`amount > balance`, guarded against
+`undefined`) in `LiquidityPanel.tsx`: the Add button now stays disabled and a red inline
+message names which side is short ("needs more RWD than your wallet holds") *before* the
+user can attempt a doomed transaction, instead of after. Verified the exact failing scenario
+against the real wallet's real balance on Vercel; the local dev environment couldn't
+independently re-exercise this specific branch (no real wallet connection available there,
+and the balance reads this check depends on are `undefined` without one), so this one relies
+on the live-data reproduction above plus a clean `tsc` rather than a second live screenshot.
+
 ### 14. Pre-mint RWD to 10,000 total supply (2026-07-16)
 
 Boss (Uriah) asked to "start the supply at 10,000 RWD" so tokens can be "bought without
