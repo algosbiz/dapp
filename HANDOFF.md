@@ -491,6 +491,58 @@ summary textarea correctly, and "Copy request" puts the exact right text on the 
 (confirmed via `navigator.clipboard.readText()` readback, not just the button's own "Copied!"
 label).
 
+### 20. Same form, now also a real owner-mode admin panel (2026-07-20, later)
+
+User asked directly: since #19 shipped a "compile a request" form, why not let them just apply
+the change themselves? Clarified which wallet they meant (`AskUserQuestion`) — not a *new*
+wallet (that would still mean transferring ownership, same tradeoff as #18), but the
+**existing deployer wallet** that already owns every contract here and that this session has
+been driving via one-off scripts all along. That distinction matters: connecting *that same*
+wallet in a browser and clicking a button changes nothing about who has control, just how they
+exercise it — so this was safe to build outright, no ownership transfer, no new risk.
+
+`EmissionRateRequestForm.tsx` is now dual-mode, per target, decided live by
+`hooks/useAdminControls.ts`'s `useAdminOwnership()` (reads each contract's `owner()` — newly
+added to both `abi/masterChef.ts` and `abi/wethStakingRewards.ts` — and compares it to the
+connected address):
+- **Not the owner (or disconnected):** exactly the #19 flow, completely unchanged — compile +
+  copy a request.
+- **Connected wallet IS the owner of the selected target:** the "Copy request" area is
+  replaced by real controls. Farm → a direct `updateEmissionRate` button. Stake / Stake RWD →
+  since those pools have no direct rate setter (rate is a side effect of funding via
+  `notifyRewardAmount`), the form now computes the exact top-up required for the desired rate
+  and walks through it as Approve → "Fund & set rate".
+
+The top-up math (`lib/rewardFunding.ts`'s `computeRequiredTopUp`) mirrors
+`WethStakingRewards.notifyRewardAmount`'s own formula exactly — fresh period
+(`reward = rate × duration`) vs. mid-period blended (`reward = rate × duration − leftover`,
+where `leftover = remaining × currentRate`) — so the UI's number always matches what the
+contract will actually compute, not an approximation. Two things it guards, both surfaced as
+plain messages rather than silent failures: (1) a desired rate *below* what's already
+committed for the rest of the current period is mathematically unreachable by topping up (the
+contract can only raise the blended rate mid-period, never lower it) — shown as "can't reach
+this rate… choose a higher rate, or wait until \[period end]"; (2) the connected wallet not
+holding enough of the reward token yet — shown as an exact shortfall amount, since this app
+deliberately doesn't auto-mint on the admin's behalf as part of this flow (kept the scope to
+"change the rate," not "also manage token supply").
+
+Verified: `tsc --noEmit` clean. Confirmed the non-owner/disconnected path is byte-for-byte
+unchanged (regression-checked in browser). The real owner-controls path was visually verified
+using the same `TEMP-DESIGN-QA` bypass pattern as earlier sessions (force `isOwnerOfTarget =
+true`, always reverted before commit) since a real test would need an actual MetaMask signature
+— Claude cannot and does not execute this for the user, same boundary as the `/wrap` widget.
+Sanity-checked the funding math by hand against live numbers: for Stake, a requested 0.02
+tRWD/sec came back as "requires funding with 12,093.366898 tRWD" — reverse-computed against the
+pool's actual `periodFinish`/`rewardRate` at the time, this is exactly the mid-period blended
+formula's output, not a rough estimate. Also confirmed the "unreachable rate" message fires
+correctly for a rate below the current leftover contribution.
+
+**To actually use this:** import the deployer wallet (`DEPLOYER_PRIVATE_KEY` in
+`packages/contracts/.env`) into a real wallet (e.g. MetaMask) and connect it on `/emissions` —
+the owner-mode controls will appear automatically once the connected address matches. The very
+first real click should be a small, low-stakes change to build confidence before relying on it
+for anything that matters.
+
 ### 17. "Total RWD supply" now reads live, not from yesterday's snapshot
 
 User pointed at the block explorer showing `totalSupply() = 12,008.805 RWD` on the actual
@@ -703,6 +755,10 @@ skill (see the user memory). The impeccable design hook is active and scans UI f
 - APR math: `lib/apr.ts` (`computeAnnualPoolReward`, `convertByPoolPrice`,
   `computeAprPercent`, `formatAprDisplay`) — pure functions, no on-chain calls, used by
   `FarmDashboard.tsx`/`LpFarmDashboard.tsx`/`RwdStakingDashboard.tsx`.
+- Emissions page + admin controls: `app/emissions/page.tsx`,
+  `components/{EmissionsPanel,EmissionRateRequestForm}.tsx`, `hooks/useAdminControls.ts`
+  (owner checks + funding-state reads + owner-only write actions), `lib/rewardFunding.ts`
+  (`computeRequiredTopUp`, pure, mirrors `notifyRewardAmount`'s own formula).
 - Landing: `app/page.tsx`, `components/landing/{Hero,Steps,Guarantees,CtaBand}.tsx`,
   `components/Footer.tsx`, `components/Navbar.tsx` (now has Stake / Farm / Stake RWD / Pool /
   Security links). Theme tokens: `tailwind.config.ts`, `app/globals.css`, `app/layout.tsx`.

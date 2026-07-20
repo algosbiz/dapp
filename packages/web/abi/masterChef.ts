@@ -83,6 +83,20 @@ export const masterChefAbi = [
     outputs: [{ name: "", type: "uint256" }],
   },
   {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "updateEmissionRate",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "_rewardPerSecond", type: "uint256" }],
+    outputs: [],
+  },
+  {
     type: "event",
     name: "Deposit",
     inputs: [
