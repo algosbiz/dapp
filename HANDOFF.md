@@ -385,6 +385,28 @@ time (reserve reads stuck on "—" locally, in two independent fresh tabs, no co
 `tsc` clean) — the same transient RPC flakiness already documented earlier in this file;
 not a regression from this change.
 
+### 17. "Total RWD supply" now reads live, not from yesterday's snapshot
+
+User pointed at the block explorer showing `totalSupply() = 12,008.805 RWD` on the actual
+`RewardToken` contract while our own dashboard still said `10,000`. Root cause: "Total RWD
+supply" (and everything derived from it — the two "Minted, last N days" tiles and Market
+cap) was reading `totalSupply` from the **last daily snapshot file entry**, not a live
+contract call. The snapshot only runs once a day (`rwd-supply-snapshot` scheduled task); the
+last entry happened to be from right after the 10,000 pre-mint (#14), and real mint activity
+since then (farm emission is continuous, plus the user's own successful `addLiquidity` and
+prior swaps triggering pool/farm state changes) pushed the *real* number to 12,008.805
+without the snapshot ever catching up. This was the correct architecture for the "minted in
+the last 7/30 days" trend tiles (that needs actual historical data points, which only the
+snapshot file has) but wrong for "right now."
+
+Fixed in `SupplyPanel.tsx`: added `fetchLiveTotalSupply()` (a plain `viem` `readContract` on
+`CONTRACTS.rwdToken`, same pattern as the existing live pool-reserves read for Market cap) and
+use its result for "current" supply everywhere, falling back to the snapshot's last value only
+if the live read fails. The 7d/30d baselines still come from the snapshot file — that part was
+never wrong and can't be fixed by a live read (a contract can't tell you what its supply was a
+week ago). Verified the corrected live number against both the contract directly (`ethers`
+script) and the block explorer before shipping — all three agreed at `12,008.805`.
+
 ### 16. Add Liquidity — guard against ratio-assist demanding more than the wallet holds
 
 Same "is this also broken" check as #15, this time for the `/pool` Add/Remove Liquidity

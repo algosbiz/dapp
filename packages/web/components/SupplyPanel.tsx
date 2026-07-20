@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { createPublicClient, formatEther, http } from "viem";
 import { robinhoodTestnet } from "@/config/chains";
+import { erc20Abi } from "@/abi/erc20";
 import { wethRwdPoolAbi } from "@/abi/wethRwdPool";
 import { CONTRACTS } from "@/config/contracts";
 import { APR_PRECISION, convertByPoolPrice } from "@/lib/apr";
@@ -31,6 +32,26 @@ function findBaseline(history: Snapshot[], now: number, minAgeMs: number): Snaps
   const cutoff = now - minAgeMs;
   const eligible = history.filter((s) => new Date(s.timestamp).getTime() <= cutoff);
   return eligible[eligible.length - 1];
+}
+
+/**
+ * Live on-chain totalSupply() — not the snapshot file. The snapshot only runs once a day,
+ * so "current" supply shown via the snapshot's last entry can lag real mint activity (the
+ * farm mints RWD continuously as rewards accrue). Historical baselines (7d/30d ago) still
+ * have to come from the snapshot file — there's no way to ask a contract "what was your
+ * totalSupply 7 days ago" — but "right now" should always be exact.
+ */
+async function fetchLiveTotalSupply(): Promise<bigint | undefined> {
+  try {
+    const client = createPublicClient({ chain: robinhoodTestnet, transport: http() });
+    return await client.readContract({
+      address: CONTRACTS.rwdToken,
+      abi: erc20Abi,
+      functionName: "totalSupply",
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -71,19 +92,20 @@ export async function SupplyPanel() {
   }
 
   const now = Date.now();
-  const totalSupply = BigInt(latest.totalSupply);
   const oldestTimestamp = new Date(history[0].timestamp).getTime();
   const daysOfHistory = Math.max(1, Math.floor((now - oldestTimestamp) / DAY_MS));
 
   const base7d = findBaseline(history, now, 7 * DAY_MS);
   const base30d = findBaseline(history, now, 30 * DAY_MS);
 
+  // "Right now" always comes from a live read; only the historical baselines above are
+  // allowed to be snapshot-file-old, since that's the only place they can come from.
+  const [liveTotalSupply, ethUsdPrice] = await Promise.all([fetchLiveTotalSupply(), fetchEthUsdPrice()]);
+  const totalSupply = liveTotalSupply ?? BigInt(latest.totalSupply);
+
   const minted7d = base7d ? totalSupply - BigInt(base7d.totalSupply) : undefined;
   const minted30d = base30d ? totalSupply - BigInt(base30d.totalSupply) : undefined;
-  const [marketCapInWeth, ethUsdPrice] = await Promise.all([
-    fetchMarketCapInWeth(totalSupply),
-    fetchEthUsdPrice(),
-  ]);
+  const marketCapInWeth = await fetchMarketCapInWeth(totalSupply);
   const marketCapInUsd =
     marketCapInWeth !== undefined && ethUsdPrice !== undefined
       ? Number(formatEther(marketCapInWeth)) * ethUsdPrice
