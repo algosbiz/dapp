@@ -435,7 +435,32 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 26. Globe gets real continents, a 3D wordmark, and the app is rebranded FLEX (2026-07-21, latest)
+### 27. Sharper continents + the real FLEX coin in the navbar (2026-07-21, latest)
+
+User asked for the globe's continents to look like the actual continents, and for the drawn
+"F" mark to be replaced by supplied artwork at `public/token.png`.
+
+**Continents, three changes together.** Source data moved from Natural Earth 110m to **50m**
+(1.6 MB vs 138 kB at generation time — irrelevant, it's build-time only). Mask resolution went
+2° → **0.5°**, i.e. 180×90 → 720×360 cells, so `lib/landMask.ts` is now 44 kB instead of 8 kB.
+And sample count went 5,200 → **14,000**, landing ~4,600 dots on land instead of ~1,700. The
+ASCII check now resolves Alaska, Greenland, Central America, the Indonesian archipelago, Japan,
+New Zealand, Madagascar and the British Isles — none of which survived at 2°.
+
+**That density needed a rendering change to stay affordable.** Filling each dot individually
+meant one `fillStyle` assignment and one `fill()` per point, which is what capped the count.
+Dots are now bucketed into 16 alpha bands and accumulated into `Path2D` objects, so a frame is
+~32 fills regardless of how many thousands of dots there are. (Note the `moveTo` before each
+`arc` — without it the arcs chain into one another with connecting lines.)
+
+**Logo.** `public/token.png` is 1106×1106 / **1.2 MB**, far too heavy for a 32 px navbar icon,
+and has background margin around the coin. `ffmpeg` (already a devDependency from §21) crops to
+the coin and resizes to 160 px → `public/token-mark.png` at **71 kB**, served through
+`next/image` and round-clipped. The original is left in place as the source asset. Regenerate
+with:
+`ffmpeg -y -i token.png -vf "crop=944:944:81:81,scale=160:160:flags=lanczos" token-mark.png`
+
+### 26. Globe gets real continents, a 3D wordmark, and the app is rebranded FLEX (2026-07-21)
 
 Three requests in one: continent silhouettes on the globe, "Robinhood Chain" in 3D behind it,
 and the navbar's green "W" replaced by a FLEX mark with the name "FLEX Staking".

@@ -17,9 +17,13 @@ import { buildLandPoints, projectPoint } from "@/lib/globe";
 
 /**
  * Points are scattered over the whole sphere and then filtered down to the ones on land, so
- * only about a third survive — oversample to land on ~1,700 dots of actual coastline.
+ * only about a third survive — oversample to land on ~4,600 dots, enough for coastlines to be
+ * recognisable rather than merely suggestive. Affordable because dots are batched by alpha
+ * into a handful of fills rather than drawn one at a time.
  */
-const SAMPLE_COUNT = 5200;
+const SAMPLE_COUNT = 14000;
+/** How finely the depth ramp is quantised for batching. More = smoother, but more fill calls. */
+const ALPHA_BUCKETS = 16;
 /** Perspective strength. Lower = more dramatic foreshortening. */
 const FOV = 2.4;
 const PULSE_MS = 1100;
@@ -81,6 +85,13 @@ export function NetworkGlobe() {
 
       pulses = pulses.filter((p) => time - p.start < PULSE_MS);
 
+      const basePaths: Path2D[] = [];
+      const brightPaths: Path2D[] = [];
+      for (let i = 0; i < ALPHA_BUCKETS; i += 1) {
+        basePaths.push(new Path2D());
+        brightPaths.push(new Path2D());
+      }
+
       // With only land drawn there are no ocean dots to imply the sphere, so trace its limb.
       context.beginPath();
       context.arc(cx, cy, globeRadius, 0, Math.PI * 2);
@@ -122,15 +133,26 @@ export function NetworkGlobe() {
           }
         }
 
-        context.beginPath();
-        context.arc(px, py, Math.max(0.4, size), 0, Math.PI * 2);
-        // Sitting on the light sage page rather than a dark panel, "lit" has to mean *deeper*,
-        // not brighter — brand lime on #e8ebe6 is barely visible, while forest green reads at
-        // roughly 8:1 against it.
-        context.fillStyle = bright
-          ? `rgba(22, 51, 0, ${alpha})` // ink-deep, for points the cursor or a pulse hits
-          : `rgba(5, 77, 40, ${alpha})`; // positive-deep
-        context.fill();
+        // Collect into an alpha bucket instead of filling here. Filling per dot meant one
+        // canvas state change and one fill call per point, which caps how many dots the
+        // continents can be drawn from; batching turns thousands of fills into ~32.
+        const bucketIndex = Math.min(ALPHA_BUCKETS - 1, Math.max(0, Math.floor(alpha * ALPHA_BUCKETS)));
+        const path = (bright ? brightPaths : basePaths)[bucketIndex];
+        const radius = Math.max(0.4, size);
+        // moveTo first, or arc() draws a connecting line from the previous dot.
+        path.moveTo(px + radius, py);
+        path.arc(px, py, radius, 0, Math.PI * 2);
+      }
+
+      // Sitting on the light sage page rather than a dark panel, "lit" has to mean *deeper*,
+      // not brighter — brand lime on #e8ebe6 is barely visible, while forest green reads at
+      // roughly 8:1 against it.
+      for (let i = 0; i < ALPHA_BUCKETS; i += 1) {
+        const alpha = (i + 0.5) / ALPHA_BUCKETS;
+        context.fillStyle = `rgba(5, 77, 40, ${alpha})`; // positive-deep
+        context.fill(basePaths[i]);
+        context.fillStyle = `rgba(22, 51, 0, ${alpha})`; // ink-deep, for cursor/pulse hits
+        context.fill(brightPaths[i]);
       }
     };
 

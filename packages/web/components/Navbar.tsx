@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -37,23 +38,20 @@ const isGroup = (entry: NavEntry): entry is NavGroup => "items" in entry;
 const pathOf = (href: string) => href.split("#")[0];
 
 /**
- * FLEX mark. There's no supplied brand asset, so this is a drawn stand-in: an "F" whose two
- * arms bend to the right, reading as both the letter and something flexing. Swap the SVG here
- * if a real logo ever lands — nothing else references it.
+ * The FLEX coin. `token-mark.png` is the supplied artwork cropped to the coin and resized to
+ * 160px (the original is 1106px / 1.2 MB — far too heavy for a 32px navbar icon). Round-clipped
+ * because the source is square with a little background left in the corners.
  */
 function FlexMark() {
   return (
-    <span className="grid h-8 w-8 place-items-center rounded-control bg-brand">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M7 20V5.5C7 4.67 7.67 4 8.5 4H18"
-          stroke="#0e0f0c"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path d="M7 12h7.5" stroke="#0e0f0c" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-    </span>
+    <Image
+      src="/token-mark.png"
+      alt=""
+      width={32}
+      height={32}
+      priority
+      className="h-8 w-8 rounded-full"
+    />
   );
 }
 

@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /**
- * Turns Natural Earth's 110m land polygons into a compact equirectangular land/water bitmask,
+ * Turns Natural Earth land polygons into a compact equirectangular land/water bitmask,
  * emitted as `lib/landMask.ts`.
  *
  * Run once and commit the output — the globe then needs no geo dependency, no runtime fetch,
  * and no polygon maths in the browser; it just samples a ~3 kB bitstring.
  *
  * Usage:
- *   curl -sL https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson -o land.geojson
+ *   curl -sL https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_land.geojson -o land.geojson
  *   node scripts/generate-land-mask.mjs land.geojson
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
-const COLS = 180; // 2° per cell horizontally
-const ROWS = 90; //  2° per cell vertically
+const COLS = 720; // 0.5° per cell horizontally
+const ROWS = 360; //  0.5° per cell vertically
 
 const input = process.argv[2];
 if (!input) {
@@ -95,7 +95,7 @@ for (let row = 0; row < ROWS; row += 1) {
 const percent = ((landCells / bits.length) * 100).toFixed(1);
 console.log(`Land cells: ${landCells}/${bits.length} (${percent}%)`);
 
-// Pack to bytes, then base64 — 16,200 bits becomes ~2.7 kB of source.
+// Pack to bytes, then base64 — bits become a few kB of source.
 const bytes = new Uint8Array(Math.ceil(bits.length / 8));
 for (let i = 0; i < bits.length; i += 1) {
   if (bits[i]) bytes[i >> 3] |= 1 << (i & 7);
@@ -103,8 +103,8 @@ for (let i = 0; i < bits.length; i += 1) {
 const base64 = Buffer.from(bytes).toString("base64");
 
 const out = `// GENERATED FILE — do not edit by hand.
-// Regenerate with: node scripts/generate-land-mask.mjs <ne_110m_land.geojson>
-// Source: Natural Earth 110m land (public domain), sampled at ${360 / COLS}° per cell.
+// Regenerate with: node scripts/generate-land-mask.mjs <ne_50m_land.geojson>
+// Source: Natural Earth 50m land (public domain), sampled at ${360 / COLS}° per cell.
 //
 // An equirectangular land/water bitmask, packed to base64 (~${(base64.length / 1024).toFixed(1)} kB).
 // Row 0 is the north pole, column 0 is 180°W. ${percent}% of cells are land, which is close to
