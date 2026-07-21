@@ -435,7 +435,40 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 24. FLX price shown in USD, from one shared source (2026-07-21, latest)
+### 25. Interactive network globe in the hero (2026-07-21, latest)
+
+Boss wanted the homepage banner to carry an interactive green globe standing for Robinhood
+Chain, styled after the dotted sphere on the official testnet faucet page.
+
+Built as `components/landing/NetworkGlobe.tsx` — **canvas 2D, zero dependencies**. Explicitly
+*not* three.js: a dotted sphere is a projection plus an alpha ramp, and re-adding a 3D library
+would undo §23, which removed exactly that on the user's request.
+
+Placement: it replaces the old `StakePreviewCard` in the hero's right column, inside a dark
+`bg-ink` panel. The reference is dark and the lime dots need a dark field to glow against, but
+the panel *contains* the darkness — the page stays the light landing restored in §23 rather
+than becoming another dark hero. The staking mockup it replaced was largely redundant with
+the "Staking in three steps" section directly below it.
+
+Interaction (the part the boss actually asked for): cursor position steers spin and tilt and
+slows the drift, so it feels grabbed; points near the cursor swell and brighten; clicking
+fires an expanding ring that lights points as it sweeps past, plus a small spin impulse.
+`prefers-reduced-motion` gets a static globe — still a real render, not an empty box.
+An `IntersectionObserver` stops the rAF loop when the hero scrolls out of view.
+
+**Verification note worth reading before debugging this.** The animation could not be
+verified through the automation browser: its tab reports `document.hidden === true`, and
+browsers suspend `requestAnimationFrame` entirely in hidden tabs (measured: 0 rAF ticks in
+600 ms). Pixel-diffing the canvas therefore returned "nothing is moving" even though the code
+is fine — the first frame had already painted 16,260 opaque pixels. So the geometry was
+extracted into `lib/globe.ts` as pure functions (`buildSphere`, `projectPoint`) and verified
+deterministically outside the browser instead: 10 checks covering unit-sphere radius, even
+latitude distribution (no polar clumping), depth/perspective ordering, and that spin and tilt
+actually move points. The component imports those functions, so the tested math is the shipped
+math. **The live motion and click-pulse still need a human with a visible browser** — that
+part is unverified from here, and was reported as such rather than claimed.
+
+### 24. FLX price shown in USD, from one shared source (2026-07-21)
 
 Boss flagged the `/pool` "Spot price" tile: he read `186.43M RWD / WETH` as a price and asked
 for USD instead, guessing it should match the price in the navbar menu.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TokenPill } from "@/components/TokenPill";
+import { NetworkGlobe } from "@/components/landing/NetworkGlobe";
 
 export function Hero() {
   return (
@@ -49,70 +49,12 @@ export function Hero() {
           </ul>
         </div>
 
-        {/* Right — staking preview card (product mockup) */}
+        {/* Right — the network itself, as an object you can push around */}
         <div className="lg:justify-self-end">
-          <StakePreviewCard />
+          <NetworkGlobe />
         </div>
       </div>
     </section>
-  );
-}
-
-function StakePreviewCard() {
-  return (
-    <div className="w-full max-w-md rounded-[28px] bg-canvas p-6 shadow-card ring-1 ring-ink/5 sm:p-7">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-ink">Staking preview</span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-positive-deep">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-positive" />
-          Earning
-        </span>
-      </div>
-
-      <div className="mt-5 space-y-2">
-        {/* You stake */}
-        <div className="rounded-control bg-canvas-soft p-4">
-          <p className="text-xs font-semibold text-ink-body">You stake</p>
-          <div className="mt-1.5 flex items-center justify-between">
-            <span className="font-display text-3xl font-extrabold tracking-tight text-ink">1.0</span>
-            <TokenPill code="WETH" tone="ink" />
-          </div>
-        </div>
-
-        {/* connector */}
-        <div className="relative flex justify-center">
-          <span className="absolute -top-4 grid h-8 w-8 place-items-center rounded-full bg-brand text-ink ring-4 ring-canvas">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M12 5v14M12 19l-5-5M12 19l5-5"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </div>
-
-        {/* You earn */}
-        <div className="rounded-control bg-brand-pale p-4">
-          <p className="text-xs font-semibold text-positive-deep">You earn</p>
-          <div className="mt-1.5 flex items-center justify-between">
-            <span className="font-display text-3xl font-extrabold tracking-tight text-ink">FLX</span>
-            <TokenPill code="Streaming" tone="green" />
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-4 flex items-center gap-2 text-xs leading-relaxed text-ink-body">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
-          <rect x="4" y="10" width="16" height="10" rx="2.5" stroke="#0e0f0c" strokeWidth="1.7" />
-          <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#0e0f0c" strokeWidth="1.7" />
-        </svg>
-        Your WETH never leaves your control. Reward rate is funded up front, so the pool can only
-        promise what it actually holds.
-      </p>
-    </div>
   );
 }
 
