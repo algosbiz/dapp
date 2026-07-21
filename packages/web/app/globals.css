@@ -12,112 +12,6 @@ body {
   color: #0e0f0c;
 }
 
-/* Night-footage legibility layer: subtle top fade + a heavier floor gradient
-   under the chapter copy, so light type stays readable over any frame. */
-.weth-film-wash {
-  background:
-    linear-gradient(180deg, rgb(14 15 12 / 0.44) 0%, rgb(14 15 12 / 0.08) 26%, transparent 52%, rgb(14 15 12 / 0.58) 100%);
-}
-
-.weth-film-grain {
-  background-image:
-    repeating-radial-gradient(circle at 17% 32%, transparent 0, rgb(14 15 12 / 0.2) 0.65px, transparent 1.2px, transparent 4px),
-    repeating-radial-gradient(circle at 71% 68%, transparent 0, rgb(255 255 255 / 0.24) 0.6px, transparent 1.1px, transparent 5px);
-  background-size: 7px 7px, 9px 9px;
-  mix-blend-mode: soft-light;
-}
-
-.weth-film-copy {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  text-shadow: 0 2px 28px rgb(14 15 12 / 0.6);
-}
-
-.weth-film-copy::before {
-  position: absolute;
-  inset: -4rem -6rem;
-  z-index: -1;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgb(14 15 12 / 0.5) 0%, rgb(14 15 12 / 0.26) 48%, transparent 74%);
-  filter: blur(30px);
-  content: "";
-}
-
-.landing-scene canvas {
-  display: block;
-  height: 100%;
-  width: 100%;
-}
-
-.landing-scene:not([data-webgl="unavailable"]) .landing-scene-fallback {
-  display: none;
-}
-
-.landing-sequence[data-loaded="true"] .landing-sequence-fallback {
-  display: none;
-}
-
-.landing-sequence[data-failed="true"] canvas {
-  display: none;
-}
-
-.landing-scroll-pulse {
-  animation: landing-scroll-pulse 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-}
-
-.landing-product-card::after {
-  position: absolute;
-  right: -4rem;
-  bottom: -5rem;
-  width: 13rem;
-  height: 13rem;
-  border: 1px solid rgb(14 15 12 / 0.08);
-  border-radius: 9999px;
-  content: "";
-  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.landing-product-card:hover::after {
-  transform: scale(1.22);
-}
-
-.protocol-pulse {
-  animation: protocol-pulse 2.4s ease-in-out infinite;
-}
-
-.product-row {
-  transition: padding 350ms cubic-bezier(0.16, 1, 0.3, 1), background-color 350ms ease;
-}
-
-.product-row:hover {
-  background-color: rgb(232 235 230 / 0.58);
-  padding-inline: 1rem;
-}
-
-@keyframes landing-scroll-pulse {
-  0% {
-    transform: translateY(-100%);
-  }
-  60%,
-  100% {
-    transform: translateY(300%);
-  }
-}
-
-@keyframes protocol-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(46 173 75 / 0.18);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 0 18px rgb(46 173 75 / 0);
-    transform: scale(1.04);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -126,16 +20,5 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-}
-
-@media (max-width: 767px) {
-  /* Copy sits lower and larger relative to the frame on phones — deepen the floor. */
-  .weth-film-wash {
-    background: linear-gradient(180deg, rgb(14 15 12 / 0.4) 0%, transparent 30%, rgb(14 15 12 / 0.24) 55%, rgb(14 15 12 / 0.72) 100%);
-  }
-
-  .weth-film-copy {
-    text-shadow: 0 2px 20px rgb(14 15 12 / 0.7);
   }
 }

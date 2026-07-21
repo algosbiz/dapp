@@ -435,7 +435,35 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 22. RWD → FLEX/FLX rename, which meant redeploying the whole stack (2026-07-21, latest)
+### 23. Homepage reverted to the original section-based landing (2026-07-21, latest)
+
+User asked to go back to the original homepage — Hero / Steps / Guarantees (the `#security`
+section) / CtaBand — and to drop the video hero and GSAP scroll entirely. `app/page.tsx` is
+now exactly the composition from the initial commit (`4f8426b`).
+
+**This reverses §21 and the out-of-session §15 redesign.** Deleted as dead code once
+`page.tsx` stopped importing them: `ImmersiveLanding.tsx`, plus `OrbitalScene.tsx`,
+`ScrollSequence.tsx` and `LandingVisual.tsx`, which were *already* orphaned before this change
+(nothing imported them — worth checking for that before assuming a component is live). Also
+removed `public/landing/film/` (the 160 webp frames, 4.9 MB) and the `gsap` + `three`
+dependencies, and stripped nine now-unreferenced rules from `globals.css` (`weth-film-*`,
+`landing-*`, `product-row`, `protocol-pulse`). Every class was grep-verified as
+zero-reference before deleting rather than assumed.
+
+Nothing is lost: the frames, components and film CSS are all in git history (§21's commit
+`496163e`), and the whole technique is packaged as a reusable global skill,
+`~/.claude/skills/scroll-film-hero/`, which can regenerate frames from any video via its
+bundled `cut-frames.mjs`. So this is a revert of *this site's* homepage, not of the capability.
+
+**Windows dev-server gotchas hit again, both already documented above and both worth
+re-reading before debugging a stuck server:** removing dependencies without an `npm install`
++ `.next` clear leaves the dev server hanging at "Starting…" with no error output; and
+`rm -rf .next` fails with `Permission denied` on `.next/trace` while any stray project
+`node.exe` still holds it. Fix is: kill project node processes (`Get-CimInstance Win32_Process
+-Filter "Name = 'node.exe'" | Where CommandLine -like '*contract*'`), then remove `.next`,
+then start.
+
+### 22. RWD → FLEX/FLX rename, which meant redeploying the whole stack (2026-07-21)
 
 User asked to rename the token to **FLEX** with symbol **FLX**. The blocking fact: an ERC20's
 `name`/`symbol` are set in the constructor and OpenZeppelin exposes no setter, so a *deployed*
@@ -893,7 +921,7 @@ skill (see the user memory). The impeccable design hook is active and scans UI f
   `components/{EmissionsPanel,EmissionRateRequestForm}.tsx`, `hooks/useAdminControls.ts`
   (owner checks + funding-state reads + owner-only write actions), `lib/rewardFunding.ts`
   (`computeRequiredTopUp`, pure, mirrors `notifyRewardAmount`'s own formula).
-- Landing: `app/page.tsx`, `components/landing/{Hero,Steps,Guarantees,CtaBand}.tsx`,
+- Landing: `app/page.tsx` (Hero + Steps + Guarantees + CtaBand — the film/GSAP landing was reverted, see §23), `components/landing/{Hero,Steps,Guarantees,CtaBand}.tsx`,
   `components/Footer.tsx`, `components/Navbar.tsx` (now has Stake / Farm / Stake RWD / Pool /
   Security links). Theme tokens: `tailwind.config.ts`, `app/globals.css`, `app/layout.tsx`.
 - Snapshot data: `packages/web/data/rwd-supply-snapshots.json` (git-tracked, updated daily
