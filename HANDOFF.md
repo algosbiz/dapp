@@ -450,8 +450,19 @@ the panel *contains* the darkness — the page stays the light landing restored 
 than becoming another dark hero. The staking mockup it replaced was largely redundant with
 the "Staking in three steps" section directly below it.
 
+**Revised same day — panel dropped, globe enlarged.** User asked for the dark card gone and
+the globe filling its half of the hero, so it now sits straight on the sage page: no panel, no
+labels (the hero's "Live on Robinhood Chain" badge already names it), radius 0.36 → 0.44 of
+the canvas, and 900 → 1500 points since the old count read sparse once enlarged.
+
+That forced a colour inversion worth remembering: **brand lime `#9fe870` on the sage page
+`#e8ebe6` is nearly invisible** (the dots only worked because the panel behind them was dark).
+On light, "lit" has to mean *deeper*, not brighter — base dots are now `positive-deep`
+`#054d28` (~8:1 against sage) and cursor/pulse-hit points go to `ink-deep` `#163300`. A soft
+`bg-brand/35` blur behind keeps the lime in the composition as a haze rather than as the dots.
+
 Interaction (the part the boss actually asked for): cursor position steers spin and tilt and
-slows the drift, so it feels grabbed; points near the cursor swell and brighten; clicking
+slows the drift, so it feels grabbed; points near the cursor swell and darken; clicking
 fires an expanding ring that lights points as it sweeps past, plus a small spin impulse.
 `prefers-reduced-motion` gets a static globe — still a real render, not an empty box.
 An `IntersectionObserver` stops the rAF loop when the hero scrolls out of view.

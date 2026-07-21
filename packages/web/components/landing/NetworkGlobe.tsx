@@ -15,7 +15,8 @@ import { buildSphere, projectPoint } from "@/lib/globe";
  * the network answering back.
  */
 
-const POINT_COUNT = 900;
+/** Raised with the globe: the same count spread over a much larger sphere reads as sparse. */
+const POINT_COUNT = 1500;
 /** Perspective strength. Lower = more dramatic foreshortening. */
 const FOV = 2.4;
 const PULSE_MS = 1100;
@@ -63,7 +64,7 @@ export function NetworkGlobe() {
     const draw = (time: number) => {
       const cx = width / 2;
       const cy = height / 2;
-      const globeRadius = Math.min(width, height) * 0.36;
+      const globeRadius = Math.min(width, height) * 0.44;
 
       context.clearRect(0, 0, width, height);
 
@@ -80,8 +81,8 @@ export function NetworkGlobe() {
       for (const point of points) {
         const { px, py, depth, scale } = projectPoint(point, projection);
 
-        // Depth ramp: near points read solid, far points fade into the panel.
-        let alpha = 0.14 + depth * 0.72;
+        // Depth ramp: near points read solid, far points fade toward the page.
+        let alpha = 0.1 + depth * 0.78;
         let size = (0.7 + depth * 1.5) * scale;
         let bright = false;
 
@@ -112,9 +113,12 @@ export function NetworkGlobe() {
 
         context.beginPath();
         context.arc(px, py, Math.max(0.4, size), 0, Math.PI * 2);
+        // Sitting on the light sage page rather than a dark panel, "lit" has to mean *deeper*,
+        // not brighter — brand lime on #e8ebe6 is barely visible, while forest green reads at
+        // roughly 8:1 against it.
         context.fillStyle = bright
-          ? `rgba(205, 255, 173, ${alpha})` // brand-active, for the lit points
-          : `rgba(159, 232, 112, ${alpha})`; // brand
+          ? `rgba(22, 51, 0, ${alpha})` // ink-deep, for points the cursor or a pulse hits
+          : `rgba(5, 77, 40, ${alpha})`; // positive-deep
         context.fill();
       }
     };
@@ -199,26 +203,21 @@ export function NetworkGlobe() {
   }, []);
 
   return (
-    <div className="w-full max-w-md rounded-[28px] bg-ink p-6 shadow-card sm:p-7">
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center gap-2 text-sm font-bold text-canvas">
-          <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-          Robinhood Chain
-        </span>
-        <span className="text-xs font-semibold text-brand">Testnet</span>
-      </div>
-
-      <div ref={wrapRef} className="relative mt-4 aspect-square w-full">
-        {/* Soft glow behind the sphere so the dots sit in space rather than on a flat panel. */}
+    // No panel: the globe sits straight on the page and fills its half of the hero. The
+    // "Live on Robinhood Chain" badge at the top of the hero already names what it stands
+    // for, so repeating a label here would just be chrome around the object.
+    <div className="w-full">
+      <div ref={wrapRef} className="relative aspect-square w-full">
+        {/* Soft lime haze so the sphere sits in space instead of floating flat on the sage. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 h-3/5 w-3/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/20 blur-3xl"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-4/5 w-4/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/35 blur-3xl"
         />
-        {/* Decorative: the network's meaning is carried by the labels around it, not the dots. */}
+        {/* Decorative: nothing here is information the surrounding copy doesn't already carry. */}
         <canvas ref={canvasRef} aria-hidden="true" className="relative block h-full w-full cursor-pointer" />
       </div>
 
-      <p className="mt-2 text-center text-xs text-canvas/55">
+      <p className="text-center text-xs text-ink-body">
         Move your cursor to steer it — click to send a pulse.
       </p>
     </div>
