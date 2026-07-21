@@ -435,7 +435,40 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 23. Homepage reverted to the original section-based landing (2026-07-21, latest)
+### 24. FLX price shown in USD, from one shared source (2026-07-21, latest)
+
+Boss flagged the `/pool` "Spot price" tile: he read `186.43M RWD / WETH` as a price and asked
+for USD instead, guessing it should match the price in the navbar menu.
+
+**The catch that shaped the fix:** the navbar pill was a hardcoded `$0.05` placeholder
+(§10), from back when FLX had no pool and therefore no derivable price. Now that the pool
+exists the real figure is **~$0.00019** — about **260x lower**. So "make them the same" had
+two readings, and only one is honest. Put it to the user with both numbers computed live;
+they chose to make *both* surfaces real rather than propagate the placeholder.
+
+Built `/api/flx-price` as the single source of truth: one server route reads the pool
+reserves and the ETH/USD feed, computes `usdPerFlx`, and caches for 60s. Both the navbar pill
+(`RwdPricePill`) and the pool tile now consume it through `useFlxPrice()`. Deliberately a
+shared endpoint rather than per-component maths — two different FLX prices on one screen is
+the exact confusion this closes — and it also keeps a rate-limited public API from being
+called once per browser.
+
+Presentation: the tile leads with USD and demotes `10M FLX / WETH` to a caption (still needed
+when sizing a swap or liquidity add, so not dropped). The pill's badge went from a warning
+"Mock" to a positive "Est.", and it now renders **nothing** until a real number arrives —
+a stand-in figure is what caused this whole thread. Both keep an "estimate" framing on
+purpose: the ETH/USD leg is real, the FLX/WETH leg is our own shallow testnet pool.
+
+`formatUsdPrice` (in `hooks/useFlxPrice.ts`) switches to significant digits below $0.01 —
+a fixed 2-decimal format renders $0.00019 as "$0.00", the same trap §22 hit with
+`formatWethHeadline`. Verified end-to-end: endpoint returns
+`{usdPerFlx: 0.00019253, flxPerWeth: 10000000, ethUsd: 1925.3}`, and pill and tile both render
+`$0.0001925` on `/pool` and `/farm`.
+
+Note the boss's screenshot still showed `RWD` and `186.43M` — that's the dead pre-rename
+deployment, because Vercel's env vars still point at the old contracts (see §22).
+
+### 23. Homepage reverted to the original section-based landing (2026-07-21)
 
 User asked to go back to the original homepage — Hero / Steps / Guarantees (the `#security`
 section) / CtaBand — and to drop the video hero and GSAP scroll entirely. `app/page.tsx` is
