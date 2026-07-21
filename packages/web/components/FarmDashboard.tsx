@@ -19,7 +19,7 @@ export function FarmDashboard() {
     query: { refetchInterval: 15_000 },
   });
   const reserve0 = reserves.data?.[0]; // WETH
-  const reserve1 = reserves.data?.[1]; // RWD
+  const reserve1 = reserves.data?.[1]; // FLX
 
   let apr: number | undefined;
   if (
@@ -49,7 +49,7 @@ export function FarmDashboard() {
         <p className="text-sm font-semibold text-ink-body">Emission rate</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
           {formatToken(rewardPerSecond.data)}{" "}
-          <span className="text-lg font-semibold text-ink-body">RWD / sec</span>
+          <span className="text-lg font-semibold text-ink-body">FLX / sec</span>
         </p>
       </div>
       <div className="rounded-card bg-canvas p-6 shadow-card">

@@ -24,7 +24,7 @@ export default function EmissionsPage() {
           Emissions &amp; Supply
         </h1>
         <p className="mt-2 text-pretty text-base leading-relaxed text-ink-body">
-          Current RWD supply and reward-emission settings across every product, read live
+          Current FLX supply and reward-emission settings across every product, read live
           from the contracts. Nothing on this page can be changed here — these are
           owner-only settings, adjusted on request.
         </p>

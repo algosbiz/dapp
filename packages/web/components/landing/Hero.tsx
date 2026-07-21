@@ -98,7 +98,7 @@ function StakePreviewCard() {
         <div className="rounded-control bg-brand-pale p-4">
           <p className="text-xs font-semibold text-positive-deep">You earn</p>
           <div className="mt-1.5 flex items-center justify-between">
-            <span className="font-display text-3xl font-extrabold tracking-tight text-ink">RWD</span>
+            <span className="font-display text-3xl font-extrabold tracking-tight text-ink">FLX</span>
             <TokenPill code="Streaming" tone="green" />
           </div>
         </div>

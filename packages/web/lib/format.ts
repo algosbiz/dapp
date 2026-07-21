@@ -44,10 +44,12 @@ export function formatWethHeadline(value: bigint | undefined): string {
   if (abs >= 1_000_000) {
     return num.toLocaleString(undefined, { notation: "compact", maximumFractionDigits: 2 });
   }
-  if (abs < 0.0001) {
-    return num.toLocaleString(undefined, { maximumFractionDigits: 8 });
+  if (abs >= 1) {
+    return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
   }
-  return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  // Below 1, fixed decimals lie: a 2-decimal cap turned a real 0.00107 WETH market cap into
+  // a flat "0". Significant digits keep small-but-real values honest at any magnitude.
+  return num.toLocaleString(undefined, { maximumSignificantDigits: 4 });
 }
 
 /**

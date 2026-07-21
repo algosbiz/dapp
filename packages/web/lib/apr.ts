@@ -3,7 +3,7 @@ import { formatPercent } from "@/lib/format";
 export const SECONDS_PER_YEAR = 31_536_000n;
 const PRECISION = 10n ** 18n;
 
-/** RWD/year a given MasterChef pool receives, from its share of the global emission rate. */
+/** FLX/year a given MasterChef pool receives, from its share of the global emission rate. */
 export function computeAnnualPoolReward(
   rewardPerSecond: bigint,
   allocPoint: bigint,

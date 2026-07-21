@@ -67,7 +67,7 @@ export function RwdStakingPanel() {
         </span>
         <p className="text-lg font-bold text-ink">Connect your wallet to start staking</p>
         <p className="mt-1 text-sm text-ink-body">
-          Once connected, you can stake RWD and track your rewards right here.
+          Once connected, you can stake FLX and track your rewards right here.
         </p>
       </div>
     );
@@ -76,8 +76,8 @@ export function RwdStakingPanel() {
   return (
     <div className="space-y-6 rounded-card bg-canvas p-6 shadow-card sm:p-8">
       <p className="rounded-control bg-canvas-soft px-4 py-3 text-sm text-ink-body">
-        This pool takes RWD and pays out RWD — the two tiles below are both denominated in
-        RWD but track different things: what you've locked up, and what you've separately
+        This pool takes FLX and pays out FLX — the two tiles below are both denominated in
+        FLX but track different things: what you've locked up, and what you've separately
         earned on top of it.
       </p>
 
@@ -87,14 +87,14 @@ export function RwdStakingPanel() {
           <p className="text-xs font-semibold text-ink-body">Staked</p>
           <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">
             {stakedBalance.data !== undefined ? formatToken(stakedBalance.data) : "0"}
-            <span className="ml-1 text-sm font-semibold text-ink-body">RWD</span>
+            <span className="ml-1 text-sm font-semibold text-ink-body">FLX</span>
           </p>
         </div>
         <div className="rounded-control bg-brand-pale p-4">
           <p className="text-xs font-semibold text-positive-deep">Earned</p>
           <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">
             {earned.data !== undefined ? formatToken(earned.data) : "0"}
-            <span className="ml-1 text-sm font-semibold text-positive-deep">RWD</span>
+            <span className="ml-1 text-sm font-semibold text-positive-deep">FLX</span>
           </p>
         </div>
       </div>
@@ -115,12 +115,12 @@ export function RwdStakingPanel() {
             className="w-full rounded-control border border-ink/20 bg-canvas px-4 py-3 text-lg font-semibold text-ink outline-none transition-shadow placeholder:font-normal placeholder:text-[#6b6d6a] focus:border-ink focus:ring-4 focus:ring-brand/40"
           />
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-body">
-            RWD
+            FLX
           </span>
         </div>
         <div className="mt-1.5 flex items-center justify-between text-xs">
           <span className="text-ink-body">
-            Balance: {rwdBalance.data !== undefined ? formatToken(rwdBalance.data) : "0"} RWD
+            Balance: {rwdBalance.data !== undefined ? formatToken(rwdBalance.data) : "0"} FLX
           </span>
           <button
             type="button"

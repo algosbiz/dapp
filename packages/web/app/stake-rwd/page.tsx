@@ -3,7 +3,7 @@ import { RwdStakingDashboard } from "@/components/RwdStakingDashboard";
 import { RwdStakingPanel } from "@/components/RwdStakingPanel";
 
 export const metadata = {
-  title: "Stake RWD | WETH Staking",
+  title: "Stake FLX | WETH Staking",
 };
 
 export default function StakeRwdPage() {
@@ -18,10 +18,10 @@ export default function StakeRwdPage() {
 
       <header className="mt-5 max-w-2xl">
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-          Stake RWD
+          Stake FLX
         </h1>
         <p className="mt-2 text-pretty text-base leading-relaxed text-ink-body">
-          Lock up RWD you've earned from the farm to earn more RWD on top of it. A
+          Lock up FLX you've earned from the farm to earn more FLX on top of it. A
           fixed reward budget is funded upfront and pays out over a set period — not
           minted on demand.
         </p>

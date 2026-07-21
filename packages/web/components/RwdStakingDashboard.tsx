@@ -18,18 +18,18 @@ export function RwdStakingDashboard() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">Total RWD locked in this pool</p>
+        <p className="text-sm font-semibold text-ink-body">Total FLX locked in this pool</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
           {formatToken(totalStaked.data)}{" "}
-          <span className="text-lg font-semibold text-ink-body">RWD</span>
+          <span className="text-lg font-semibold text-ink-body">FLX</span>
         </p>
       </div>
       <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">Your wallet RWD balance</p>
+        <p className="text-sm font-semibold text-ink-body">Your wallet FLX balance</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
           {address ? formatToken(rwdBalance.data) : "—"}{" "}
           <span className="text-lg font-semibold text-ink-body">
-            {address ? "RWD" : "Connect wallet"}
+            {address ? "FLX" : "Connect wallet"}
           </span>
         </p>
       </div>

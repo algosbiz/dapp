@@ -63,7 +63,7 @@ export function LpFarmPanel() {
       <div className="rounded-card bg-canvas p-8 text-center shadow-card">
         <p className="text-lg font-bold text-ink">Connect your wallet to farm with LP tokens</p>
         <p className="mt-1 text-sm text-ink-body">
-          Stake WETH-RWD-LP tokens (from adding liquidity on the Pool page) to earn RWD.
+          Stake WETH-FLEX-LP tokens (from adding liquidity on the Pool page) to earn FLX.
         </p>
       </div>
     );
@@ -83,7 +83,7 @@ export function LpFarmPanel() {
           <p className="text-xs font-semibold text-positive-deep">Pending reward</p>
           <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">
             {pending.data !== undefined ? formatToken(pending.data, 6) : "0"}
-            <span className="ml-1 text-sm font-semibold text-positive-deep">RWD</span>
+            <span className="ml-1 text-sm font-semibold text-positive-deep">FLX</span>
           </p>
         </div>
       </div>
@@ -103,7 +103,7 @@ export function LpFarmPanel() {
             className="w-full rounded-control border border-ink/20 bg-canvas px-4 py-3 text-lg font-semibold text-ink outline-none transition-shadow placeholder:font-normal placeholder:text-[#6b6d6a] focus:border-ink focus:ring-4 focus:ring-brand/40"
           />
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-body">
-            WETH-RWD-LP
+            WETH-FLEX-LP
           </span>
         </div>
         <div className="mt-1.5 flex items-center justify-between text-xs">

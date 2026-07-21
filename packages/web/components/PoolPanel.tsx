@@ -20,15 +20,15 @@ export function PoolPanel() {
         </p>
       </div>
       <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">RWD in pool</p>
+        <p className="text-sm font-semibold text-ink-body">FLX in pool</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatTokenSmart(reserve1)} <span className="text-lg font-semibold text-ink-body">RWD</span>
+          {formatTokenSmart(reserve1)} <span className="text-lg font-semibold text-ink-body">FLX</span>
         </p>
       </div>
       <div className="rounded-card bg-canvas p-6 shadow-card">
         <p className="text-sm font-semibold text-ink-body">Spot price</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatTokenSmart(spotPrice)} <span className="text-lg font-semibold text-ink-body">RWD / WETH</span>
+          {formatTokenSmart(spotPrice)} <span className="text-lg font-semibold text-ink-body">FLX / WETH</span>
         </p>
       </div>
     </div>

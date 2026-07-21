@@ -18,7 +18,7 @@ describe("WethRwdPool", function () {
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const weth = await MockERC20.deploy("Wrapped Ether", "WETH");
     await weth.waitForDeployment();
-    const rwd = await MockERC20.deploy("Reward Token", "RWD");
+    const rwd = await MockERC20.deploy("FLEX", "FLX");
     await rwd.waitForDeployment();
 
     const Pool = await ethers.getContractFactory("WethRwdPool");
@@ -68,8 +68,8 @@ describe("WethRwdPool", function () {
       const { weth, rwd, pool } = await deployFixture();
       expect(await pool.token0()).to.equal(await weth.getAddress());
       expect(await pool.token1()).to.equal(await rwd.getAddress());
-      expect(await pool.name()).to.equal("WETH-RWD LP Token");
-      expect(await pool.symbol()).to.equal("WETH-RWD-LP");
+      expect(await pool.name()).to.equal("WETH-FLEX LP Token");
+      expect(await pool.symbol()).to.equal("WETH-FLEX-LP");
     });
   });
 

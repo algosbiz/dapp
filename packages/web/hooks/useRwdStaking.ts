@@ -6,9 +6,9 @@ import { wethStakingRewardsAbi } from "@/abi/wethStakingRewards";
 import { CONTRACTS } from "@/config/contracts";
 
 /**
- * "RWD for RWD" pool — same WethStakingRewards contract as /stake, but both the staked
- * token and the reward token are RWD. Staked and earned amounts are both denominated
- * in RWD; the UI must label them clearly so users don't mistake one for the other.
+ * "FLX for FLX" pool — same WethStakingRewards contract as /stake, but both the staked
+ * token and the reward token are FLX. Staked and earned amounts are both denominated
+ * in FLX; the UI must label them clearly so users don't mistake one for the other.
  */
 export function useRwdStakingData() {
   const { address } = useAccount();

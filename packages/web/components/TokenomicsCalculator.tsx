@@ -101,13 +101,13 @@ export function TokenomicsCalculator() {
         <div className="rounded-control bg-canvas-soft p-4 text-sm text-ink-body">
           Using the current live total supply:{" "}
           <span className="font-semibold text-ink">
-            {totalSupplyNumber !== undefined ? totalSupplyNumber.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "…"} RWD
+            {totalSupplyNumber !== undefined ? totalSupplyNumber.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "…"} FLX
           </span>
         </div>
 
         <div className="space-y-3 border-t border-ink/10 pt-5">
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-ink-body">Implied price per RWD</span>
+            <span className="text-sm text-ink-body">Implied price per FLX</span>
             <span className="text-lg font-bold text-ink">
               {pricePerRwd !== undefined ? `$${pricePerRwd.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : "—"}
             </span>
@@ -117,10 +117,10 @@ export function TokenomicsCalculator() {
             <span className="text-lg font-bold text-ink">${wethSide.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-ink-body">Deposit — RWD side</span>
+            <span className="text-sm text-ink-body">Deposit — FLX side</span>
             <span className="text-lg font-bold text-ink">
               {rwdSide !== undefined
-                ? `${rwdSide.toLocaleString(undefined, { maximumFractionDigits: 2 })} RWD`
+                ? `${rwdSide.toLocaleString(undefined, { maximumFractionDigits: 2 })} FLX`
                 : "—"}
             </span>
           </div>

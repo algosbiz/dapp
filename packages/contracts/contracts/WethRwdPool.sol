@@ -77,7 +77,7 @@ contract WethRwdPool is ERC20, ERC20Burnable, ReentrancyGuard, Ownable2Step, Pau
         address _token0,
         address _token1,
         address initialOwner
-    ) ERC20("WETH-RWD LP Token", "WETH-RWD-LP") Ownable(initialOwner) {
+    ) ERC20("WETH-FLEX LP Token", "WETH-FLEX-LP") Ownable(initialOwner) {
         require(_token0 != address(0), "token0 = zero address");
         require(_token1 != address(0), "token1 = zero address");
         require(_token0 != _token1, "token0 = token1");

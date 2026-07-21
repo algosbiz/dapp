@@ -61,7 +61,7 @@ export function SwapPanel() {
     useWethRwdPoolActions();
   const { run, activeLabel } = useTransactionToast({ isPending, isConfirming, isConfirmed, error, reset });
 
-  const [zeroForOne, setZeroForOne] = useState(true); // true = WETH -> RWD
+  const [zeroForOne, setZeroForOne] = useState(true); // true = WETH -> FLX
   const [amount, setAmount] = useState("");
   const [acknowledgedImpact, setAcknowledgedImpact] = useState(false);
 
@@ -90,8 +90,8 @@ export function SwapPanel() {
   }, [parsedAmountIn, amountOut, reserveIn, reserveOut]);
   const isHighImpact = priceImpactBps >= HIGH_IMPACT_BPS;
 
-  const inTokenSymbol = zeroForOne ? "WETH" : "RWD";
-  const outTokenSymbol = zeroForOne ? "RWD" : "WETH";
+  const inTokenSymbol = zeroForOne ? "WETH" : "FLX";
+  const outTokenSymbol = zeroForOne ? "FLX" : "WETH";
   const inTokenAddress = zeroForOne ? CONTRACTS.weth : CONTRACTS.rwdToken;
   const inBalance = zeroForOne ? wethBalance.data : rwdBalance.data;
   const outBalance = zeroForOne ? rwdBalance.data : wethBalance.data;

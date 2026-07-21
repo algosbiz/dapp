@@ -30,7 +30,7 @@ export default function FarmPage() {
           WETH Farm
         </h1>
         <p className="mt-2 text-pretty text-base leading-relaxed text-ink-body">
-          Deposit WETH and earn freshly minted RWD every second. Rewards are minted on demand — the
+          Deposit WETH and earn freshly minted FLX every second. Rewards are minted on demand — the
           emission never runs out. Harvest, withdraw, or emergency-exit at any time.
         </p>
       </header>
@@ -44,11 +44,11 @@ export default function FarmPage() {
             LP farm
           </h2>
           <p className="mt-1 text-sm text-ink-body">
-            Stake WETH-RWD-LP tokens (from adding liquidity on the{" "}
+            Stake WETH-FLEX-LP tokens (from adding liquidity on the{" "}
             <Link href="/pool" className="font-semibold text-positive hover:text-positive-deep">
               Pool page
             </Link>
-            ) to earn RWD from the same farm.
+            ) to earn FLX from the same farm.
           </p>
           <div className="mt-4 space-y-6">
             <LpFarmDashboard />
@@ -58,10 +58,10 @@ export default function FarmPage() {
 
         <div>
           <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">
-            RWD supply
+            FLX supply
           </h2>
           <p className="mt-1 text-sm text-ink-body">
-            Tracked from daily snapshots — how fast new RWD is being minted, for monitoring
+            Tracked from daily snapshots — how fast new FLX is being minted, for monitoring
             inflation.
           </p>
           <div className="mt-4">

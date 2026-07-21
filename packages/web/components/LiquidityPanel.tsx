@@ -140,7 +140,7 @@ export function LiquidityPanel() {
 
         <div>
           <label htmlFor="add-amount1" className="mb-1.5 block text-sm font-semibold text-ink">
-            RWD
+            FLX
           </label>
           <input
             id="add-amount1"
@@ -152,7 +152,7 @@ export function LiquidityPanel() {
             className="w-full rounded-control border border-ink/20 bg-canvas px-4 py-3 text-lg font-semibold text-ink outline-none transition-shadow placeholder:font-normal placeholder:text-[#6b6d6a] focus:border-ink focus:ring-4 focus:ring-brand/40"
           />
           <p className="mt-1 text-xs text-ink-body">
-            Balance: {rwdBalance.data !== undefined ? formatToken(rwdBalance.data) : "0"} RWD
+            Balance: {rwdBalance.data !== undefined ? formatToken(rwdBalance.data) : "0"} FLX
           </p>
         </div>
 
@@ -166,10 +166,10 @@ export function LiquidityPanel() {
           </button>
           <button
             disabled={!needsApproval1 || amount1 === 0n || isBusy}
-            onClick={() => run("Approve RWD", () => approveToken1(amount1))}
+            onClick={() => run("Approve FLX", () => approveToken1(amount1))}
             className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
           >
-            <ButtonContent busy={activeLabel === "Approve RWD"} label="Approve RWD" busyLabel="Approving…" />
+            <ButtonContent busy={activeLabel === "Approve FLX"} label="Approve FLX" busyLabel="Approving…" />
           </button>
           <button
             disabled={
@@ -194,8 +194,8 @@ export function LiquidityPanel() {
 
         {(insufficientWeth || insufficientRwd) && (
           <p className="text-xs font-semibold text-negative-deep">
-            The pool's current price means matching {insufficientWeth ? "that much RWD" : "that much WETH"}{" "}
-            needs more {insufficientWeth ? "WETH" : "RWD"} than your wallet holds. Try a smaller amount.
+            The pool's current price means matching {insufficientWeth ? "that much FLX" : "that much WETH"}{" "}
+            needs more {insufficientWeth ? "WETH" : "FLX"} than your wallet holds. Try a smaller amount.
           </p>
         )}
       </div>
@@ -219,7 +219,7 @@ export function LiquidityPanel() {
               className="w-full rounded-control border border-ink/20 bg-canvas px-4 py-3 text-lg font-semibold text-ink outline-none transition-shadow placeholder:font-normal placeholder:text-[#6b6d6a] focus:border-ink focus:ring-4 focus:ring-brand/40"
             />
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-body">
-              WETH-RWD-LP
+              WETH-FLEX-LP
             </span>
           </div>
           <div className="mt-1.5 flex items-center justify-between text-xs">
@@ -241,7 +241,7 @@ export function LiquidityPanel() {
           <p className="text-xs font-semibold text-ink-body">You receive (≈)</p>
           <p className="mt-1 text-base font-bold text-ink">
             {removePreview ? formatToken(removePreview.amount0, 6) : "0"} WETH +{" "}
-            {removePreview ? formatToken(removePreview.amount1, 6) : "0"} RWD
+            {removePreview ? formatToken(removePreview.amount1, 6) : "0"} FLX
           </p>
         </div>
 

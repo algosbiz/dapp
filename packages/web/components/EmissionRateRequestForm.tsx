@@ -29,32 +29,32 @@ const TARGETS: Record<
 > = {
   farm: {
     label: "Farm (MasterChef) — farm-wide rate",
-    unit: "RWD/sec",
+    unit: "FLX/sec",
     address: CONTRACTS.masterChef,
     contractName: "MasterChef",
     note: "Applies immediately and settles both pools first, split across the WETH and LP farm pools by their current allocation weights.",
   },
   stake: {
-    label: "Stake (WETH → tRWD)",
-    unit: "tRWD/sec",
+    label: "Stake (WETH → tFLX)",
+    unit: "tFLX/sec",
     address: CONTRACTS.stakingRewards,
     contractName: "WethStakingRewards (Stake)",
     note: "This pool's rate comes from funding it (notifyRewardAmount), not a direct setter — the exact top-up needed will be computed at execution time.",
     rewardTokenAddress: CONTRACTS.rewardsToken,
   },
   "stake-rwd": {
-    label: "Stake RWD (RWD → RWD)",
-    unit: "RWD/sec",
+    label: "Stake FLX (FLX → FLX)",
+    unit: "FLX/sec",
     address: CONTRACTS.rwdStaking,
-    contractName: "WethStakingRewards (Stake RWD)",
-    note: "Same funding-based model as Stake above, in RWD instead of tRWD.",
+    contractName: "WethStakingRewards (Stake FLX)",
+    note: "Same funding-based model as Stake above, in FLX instead of tFLX.",
     rewardTokenAddress: CONTRACTS.rwdToken,
   },
 };
 
 /** Turns a "/sec" unit label into its "/day" equivalent for the human-scale preview line. */
 const perDayUnit = (unit: string) => unit.replace("/sec", "/day");
-/** Turns a "/sec" rate unit into the bare token symbol (e.g. "tRWD/sec" -> "tRWD"). */
+/** Turns a "/sec" rate unit into the bare token symbol (e.g. "tFLX/sec" -> "tFLX"). */
 const tokenSymbol = (unit: string) => unit.replace("/sec", "");
 
 export function EmissionRateRequestForm() {

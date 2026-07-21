@@ -66,7 +66,7 @@ export function FarmPanel() {
         </span>
         <p className="text-lg font-bold text-ink">Connect your wallet to start farming</p>
         <p className="mt-1 text-sm text-ink-body">
-          Deposit WETH into the farm and earn freshly minted RWD every second.
+          Deposit WETH into the farm and earn freshly minted FLX every second.
         </p>
       </div>
     );
@@ -87,7 +87,7 @@ export function FarmPanel() {
           <p className="text-xs font-semibold text-positive-deep">Pending reward</p>
           <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">
             {pending.data !== undefined ? formatToken(pending.data) : "0"}
-            <span className="ml-1 text-sm font-semibold text-positive-deep">RWD</span>
+            <span className="ml-1 text-sm font-semibold text-positive-deep">FLX</span>
           </p>
         </div>
       </div>

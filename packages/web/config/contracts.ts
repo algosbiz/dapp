@@ -17,15 +17,18 @@ export const CONTRACTS = {
     process.env.NEXT_PUBLIC_REWARD_TOKEN_ADDRESS,
     "NEXT_PUBLIC_REWARD_TOKEN_ADDRESS"
   ),
-  // MasterChef farm — stakers deposit WETH into pid 0 and earn minted RWD.
+  // MasterChef farm — stakers deposit WETH into pid 0 and earn minted FLX.
   masterChef: requireAddress(
     process.env.NEXT_PUBLIC_MASTERCHEF_ADDRESS,
     "NEXT_PUBLIC_MASTERCHEF_ADDRESS"
   ),
-  // The farm's RewardToken (RWD) itself — not the same as `rewardsToken` above (tRWD,
+  // The farm's reward token, FLEX/FLX — not the same as `rewardsToken` above (tFLX,
   // the separate reward token used by the /stake WETH pool).
+  // NOTE: the *_RWD_* env var names are kept from the pre-rename deployment on purpose.
+  // Renaming them would silently break any environment (Vercel, CI) still setting the old
+  // keys, and the key name has no user-visible effect — only the on-chain symbol does.
   rwdToken: requireAddress(process.env.NEXT_PUBLIC_RWD_TOKEN_ADDRESS, "NEXT_PUBLIC_RWD_TOKEN_ADDRESS"),
-  // WethStakingRewards instance where users stake RWD to earn more RWD.
+  // WethStakingRewards instance where users stake FLX to earn more FLX.
   rwdStaking: requireAddress(
     process.env.NEXT_PUBLIC_RWD_STAKING_ADDRESS,
     "NEXT_PUBLIC_RWD_STAKING_ADDRESS"

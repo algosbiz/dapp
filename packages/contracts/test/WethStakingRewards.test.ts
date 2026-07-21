@@ -11,7 +11,7 @@ describe("WethStakingRewards", function () {
 
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const weth = await MockERC20.deploy("Wrapped Ether", "WETH");
-    const rewardToken = await MockERC20.deploy("Reward Token", "RWD");
+    const rewardToken = await MockERC20.deploy("FLEX", "FLX");
 
     const Staking = await ethers.getContractFactory("WethStakingRewards");
     const staking = await Staking.deploy(

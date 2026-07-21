@@ -37,7 +37,7 @@ function findBaseline(history: Snapshot[], now: number, minAgeMs: number): Snaps
 /**
  * Live on-chain totalSupply() — not the snapshot file. The snapshot only runs once a day,
  * so "current" supply shown via the snapshot's last entry can lag real mint activity (the
- * farm mints RWD continuously as rewards accrue). Historical baselines (7d/30d ago) still
+ * farm mints FLX continuously as rewards accrue). Historical baselines (7d/30d ago) still
  * have to come from the snapshot file — there's no way to ask a contract "what was your
  * totalSupply 7 days ago" — but "right now" should always be exact.
  */
@@ -55,7 +55,7 @@ async function fetchLiveTotalSupply(): Promise<bigint | undefined> {
 }
 
 /**
- * Market cap = totalSupply x current RWD price, both expressed in WETH — no USD price
+ * Market cap = totalSupply x current FLX price, both expressed in WETH — no USD price
  * needed (same trick as the APR calculations), and there is no real USD price to use
  * anyway since this is testnet WETH. Reads live pool reserves directly (not from the
  * daily snapshot file, which only tracks totalSupply) so this stays current between
@@ -85,7 +85,7 @@ export async function SupplyPanel() {
   if (!latest) {
     return (
       <div className="rounded-card bg-canvas p-6 shadow-card">
-        <p className="text-sm font-semibold text-ink-body">RWD supply tracking</p>
+        <p className="text-sm font-semibold text-ink-body">FLX supply tracking</p>
         <p className="mt-2 text-base text-ink-body">No snapshots recorded yet.</p>
       </div>
     );
@@ -114,28 +114,28 @@ export async function SupplyPanel() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard
-        label="Total RWD supply"
+        label="Total FLX supply"
         value={formatToken(totalSupply)}
-        unit="RWD"
-        caption="Every RWD that exists so far. This number only ever goes up."
+        unit="FLX"
+        caption="Every FLX that exists so far. This number only ever goes up."
       />
       <MetricCard
         label="Minted, last 7 days"
         value={minted7d !== undefined ? formatToken(minted7d) : "—"}
-        unit={minted7d !== undefined ? "RWD" : undefined}
+        unit={minted7d !== undefined ? "FLX" : undefined}
         caption={
           minted7d !== undefined
-            ? "New RWD created over the past week."
+            ? "New FLX created over the past week."
             : `Needs 7 days of history to show — ${daysOfHistory}d recorded so far.`
         }
       />
       <MetricCard
         label="Minted, last 30 days"
         value={minted30d !== undefined ? formatToken(minted30d) : "—"}
-        unit={minted30d !== undefined ? "RWD" : undefined}
+        unit={minted30d !== undefined ? "FLX" : undefined}
         caption={
           minted30d !== undefined
-            ? "New RWD created over the past month."
+            ? "New FLX created over the past month."
             : `Needs 30 days of history to show — ${daysOfHistory}d recorded so far.`
         }
       />
@@ -148,7 +148,7 @@ export async function SupplyPanel() {
         }
         caption={
           marketCapInUsd !== undefined
-            ? "Supply × pool price × today's live ETH/USD rate. Hypothetical — the RWD:WETH ratio itself comes from our shallow testnet pool."
+            ? "Supply × pool price × today's live ETH/USD rate. Hypothetical — the FLX:WETH ratio itself comes from our shallow testnet pool."
             : "Supply × live pool price. Testnet WETH has no USD value — illustrative only."
         }
       />

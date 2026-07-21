@@ -1,6 +1,6 @@
 # HANDOFF — WETH Staking / MasterChef farm / RWD-for-RWD pool / WETH-RWD AMM (Robinhood Chain)
 
-_Last updated: 2026-07-20. Repo is now on GitHub: https://github.com/algosbiz/dapp_
+_Last updated: 2026-07-21. Repo is now on GitHub: https://github.com/algosbiz/dapp_
 
 ## Current state (2026-07-15)
 
@@ -435,7 +435,67 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 21. Homepage "protocol film" is now a real scroll-scrubbed frame sequence (2026-07-20, latest)
+### 22. RWD → FLEX/FLX rename, which meant redeploying the whole stack (2026-07-21, latest)
+
+User asked to rename the token to **FLEX** with symbol **FLX**. The blocking fact: an ERC20's
+`name`/`symbol` are set in the constructor and OpenZeppelin exposes no setter, so a *deployed*
+token can never be renamed. Worse, every downstream contract stores the token address as
+`immutable` (`MasterChef.reward`, `WethRwdPool.token0/token1`,
+`WethStakingRewards.stakingToken/rewardsToken`) — so a new token forces new versions of
+everything that touches it.
+
+Presented the honest fork: cosmetic UI-only rename (cheap, but MetaMask/explorer keep saying
+RWD — the same "wrong token imported" confusion already documented above), or a real redeploy.
+User chose the redeploy, and also opted to rename tRWD → tFLX. Right call on testnet: the
+balances being abandoned are test tokens, and after mainnet this option disappears entirely.
+
+**What changed in source:** only ERC20 metadata — `RewardToken` → `ERC20("FLEX","FLX")`,
+`TestnetRewardToken` → `("Testnet FLEX","tFLX")`, `WethRwdPool` LP →
+`("WETH-FLEX LP Token","WETH-FLEX-LP")`. Solidity **class** names (`RewardToken`,
+`WethRwdPool`) were deliberately left alone — they're internal, and renaming them would
+churn every script, test, ABI and hook for zero user-visible gain. Same reasoning kept the
+`NEXT_PUBLIC_*RWD*` env-var keys: renaming them would silently break any environment (Vercel,
+CI) still setting the old keys, and the key name never reaches a user. Three test fixtures
+asserting the old name/symbol were updated; all 35 tests pass.
+
+**Deploy order** (each step depends on the previous, scripts committed under
+`packages/contracts/scripts/`): `deploy-masterchef` (FLEX + MasterChef gen 4 + pid 0, then
+hands token ownership to the chef) → `deploy-weth-rwd-pool` → `seed-flex-pool` (wrap ETH,
+`ownerMint` FLX, add liquidity, **burn founding LP**) → `add-lp-pool` (pid 1) →
+`deploy-rwd-pool` + `fund-flex-stake` → `deploy-testnet` + `fund-tflex-stake`.
+`verify-flex-stack.ts` checks the whole thing in one pass.
+
+**Seeded the AMM far thicker this time: 0.001 WETH / 10,000 FLX** (1 WETH = 10M FLX). The
+previous pool was left so thin (~0.0000001 WETH) that real swap outputs rounded to "0" and
+needed adaptive formatters to stay honest — starting with depth avoids re-earning that whole
+class of bug. Founding LP burned, so `totalSupply` is the 1000-wei dead-address minimum and
+the "nobody can withdraw it" claim in the UI stays true.
+
+**Gas was a non-issue, contrary to the pre-flight worry:** the entire deployment (6 contracts
++ ~15 transactions) cost **0.0011 ETH** on this L2. Worth remembering before hesitating over
+a redeploy here again.
+
+Safety property worth reusing: contracts were deployed and verified *before* any env var was
+switched, so a failure partway through would have left the live app untouched on the old
+stack rather than half-migrated.
+
+**Bug found during verification:** market cap rendered "≈ 0 WETH" when the true value was
+0.00107. `formatWethHeadline` had a gap — values between 0.0001 and 1 fell into a
+2-decimal branch that floored them to "0" (the `< 0.0001` branch only rescued *very* tiny
+numbers). Fixed by switching everything below 1 to `maximumSignificantDigits: 4`. This is the
+third instance this project has hit of "fixed decimals silently render a real value as zero";
+prefer significant digits for any figure whose magnitude isn't known in advance.
+
+Also **reset `data/rwd-supply-snapshots.json`** to a single fresh baseline. It held the old
+token's supply history (71 → 10,000 RWD); leaving it would have made the 7d/30d "minted"
+figures compare a dead token's history against the new token's supply. The old series is
+still in git history.
+
+**Not done, needs the user:** Vercel's env vars still point at the dead RWD contracts. The
+deployed site will keep showing the old stack until those six `NEXT_PUBLIC_*` values are
+updated in the Vercel dashboard to match `packages/web/.env.local`.
+
+### 21. Homepage "protocol film" is now a real scroll-scrubbed frame sequence (2026-07-20)
 
 User asked for a catwifcap.fun-style homepage: a video cut into hundreds of small webp
 frames, swapped by scroll position so scrolling literally plays the film forward/backward
@@ -746,21 +806,35 @@ end, then push succeeded.
 
 ## Deployed on Robinhood Chain **Testnet** (chainId 46630)
 
+**FLEX generation (2026-07-21) — current.** Everything below was redeployed for the
+RWD → FLEX/FLX rename; see §22 for why a rename forces a full redeploy.
+
 | What | Address |
 |---|---|
-| MasterChef (current — per-second + `ownerMint`; pid 0 = WETH, pid 1 = WETH-RWD-LP) | `0x6E530044df48cFfa245aA2b1102AfF5D9c4e02E6` |
-| RewardToken / RWD (current, farm's mint-on-demand token) | `0x3e71e09aF9278ed68d5D12df8edb2Ae1b69f8666` |
-| Stake-RWD pool (WethStakingRewards, RWD↔RWD) | `0x0Fb2421c5BB75c4eE883Dd76725dbbEBEdfb72ea` |
-| WethRwdPool (AMM, LP token `WETH-RWD-LP`, founding liquidity burned) | `0x6b9929D2cb7037C2d637cDb01540384a1aE00B4c` |
-| WethStakingRewards (`/stake`, WETH↔tRWD) | `0x81453690904DD3Ce2EAFF49224b5F9960F9651f4` |
-| TestnetRewardToken / tRWD (`/stake`'s reward) | `0x2FcEAfE77702fE1A915a483F2CFEea27e5ee74a9` |
-| WETH (testnet) | `0x7943e237c7F95DA44E0301572D358911207852Fa` |
+| MasterChef gen 4 (per-second + `ownerMint`; pid 0 = WETH, pid 1 = WETH-FLEX-LP) | `0x92448e5eC14b969EC0960aa418295dE7a97De417` |
+| RewardToken / **FLEX (FLX)** — farm's mint-on-demand token | `0xc8aF3c4f600469DD1a58B33E3e88e0a749cD312e` |
+| Stake-FLEX pool (WethStakingRewards, FLX↔FLX) | `0x8F02f6B7A05095B43ee2cb64085CAcc578a53CC1` |
+| WethRwdPool (AMM, LP token `WETH-FLEX-LP`, founding liquidity burned) | `0x83715727e023FFb88847B02d98d39f63eD8eb09e` |
+| WethStakingRewards (`/stake`, WETH↔tFLX) | `0x85a2C8703611C68f5c2571428837d56Fb4bbbccD` |
+| TestnetRewardToken / **tFLX** (`/stake`'s reward) | `0xC77b859Ac99fB812386BE76e51dEf57774785ef9` |
+| WETH (testnet — unchanged, not ours) | `0x7943e237c7F95DA44E0301572D358911207852Fa` |
 | Deployer wallet | `0x062B37Ff25204B30936E8b77A5f94EA5eFd2241B` |
 
 ### Dead contracts (do not point the web app at these)
 
+**The whole RWD generation below died in the FLEX rename (2026-07-21).** Any RWD/tRWD/
+WETH-RWD-LP balance a wallet still holds lives on these dead contracts and is not readable
+by the app any more — including the boss's ~678 wei of old LP and any farmed RWD. That's
+the accepted cost of the rename, agreed before redeploying.
+
 | What | Address | Why dead |
 |---|---|---|
+| MasterChef gen 3 (RWD era) | `0x6E530044df48cFfa245aA2b1102AfF5D9c4e02E6` | Superseded by gen 4 (FLEX). Its RewardToken is immutable, so renaming the token forced a new farm too. |
+| RewardToken / RWD gen 3 | `0x3e71e09aF9278ed68d5D12df8edb2Ae1b69f8666` | The old `RWD` token, final supply ~14,132. **Wallets that imported this into MetaMask will still see an RWD balance** — tell them to import FLX `0xc8aF3c4f600469DD1a58B33E3e88e0a749cD312e` instead. |
+| Stake-RWD pool | `0x0Fb2421c5BB75c4eE883Dd76725dbbEBEdfb72ea` | Pointed at the dead RWD token (immutable). |
+| WethRwdPool (RWD era, `WETH-RWD-LP`) | `0x6b9929D2cb7037C2d637cDb01540384a1aE00B4c` | Pointed at the dead RWD token. Its founding liquidity was burned, so nothing is recoverable from it by anyone — by design. |
+| WethStakingRewards (`/stake`, tRWD era) | `0x81453690904DD3Ce2EAFF49224b5F9960F9651f4` | Replaced alongside the tRWD → tFLX rename. |
+| TestnetRewardToken / tRWD | `0x2FcEAfE77702fE1A915a483F2CFEea27e5ee74a9` | The old `tRWD` token. |
 | MasterChef gen 2 (per-second, no `ownerMint`) | `0x0e38363Cb657E82E44F0ccaad2A44a469C3AdA9d` | Superseded by current gen 3 above. Deployer's 0.0005 WETH test stake still sits here — low priority to reclaim (`withdraw(0, ...)`). |
 | RewardToken gen 2 | `0x70c7e20a09671CD02244D85135255FDb388ee6eE` | Belonged to gen-2 MasterChef. **Browser test staker `0xB2FE8...233e9` has 21.52 RWD sitting here** (from harvesting gen-2 before the redeploy) — this is the address they have imported into MetaMask as "RWD", so MetaMask shows a nonzero balance while `/stake-rwd` (which reads the CURRENT gen-3 RewardToken) correctly shows 0 for that wallet. Not a bug — confirmed on-chain 2026-07-15. To see gen-3 RWD in MetaMask, import `0x3e71e09aF9278ed68d5D12df8edb2Ae1b69f8666` instead/additionally. Every MasterChef redeploy mints a fresh RewardToken, so this "wrong generation imported" confusion will recur if MasterChef is redeployed again — always re-check which RWD address a wallet has imported after a redeploy. |
 | MasterChef gen 1 (per-BLOCK, the original bug) | `0x0E3a21D76b065f19FC3733044Bb9955e16a1b65c` | Per-block emission barely accrued on this L2. **Browser test staker `0xB2FE805A538E05a79a5a37AEc093D0b2a79233e9` still has 0.001 WETH stuck here** — only that wallet can `emergencyWithdraw(0)` it out. No rush (accrues ~nothing), but don't forget. |

@@ -8,7 +8,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 ///         Testnet before the real internal reward token is available. DO NOT deploy
 ///         this to mainnet — swap in the company's real reward token address instead.
 contract TestnetRewardToken is ERC20, Ownable {
-    constructor(address initialOwner) ERC20("Testnet Reward Token", "tRWD") Ownable(initialOwner) {
+    constructor(address initialOwner) ERC20("Testnet FLEX", "tFLX") Ownable(initialOwner) {
         _mint(initialOwner, 1_000_000 ether);
     }
 

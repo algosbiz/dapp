@@ -88,7 +88,7 @@ export function StakingPanel() {
           <p className="text-xs font-semibold text-positive-deep">Earned</p>
           <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">
             {earned.data !== undefined ? formatToken(earned.data) : "0"}
-            <span className="ml-1 text-sm font-semibold text-positive-deep">RWD</span>
+            <span className="ml-1 text-sm font-semibold text-positive-deep">FLX</span>
           </p>
         </div>
       </div>

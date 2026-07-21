@@ -23,7 +23,7 @@ export default function TokenomicsPage() {
           Tokenomics Calculator
         </h1>
         <p className="mt-2 text-pretty text-base leading-relaxed text-ink-body">
-          Explore a target market cap and liquidity budget for RWD before committing real
+          Explore a target market cap and liquidity budget for FLX before committing real
           funds. Numbers here are purely illustrative — testnet WETH has no USD value, and
           nothing on this page ever sends a transaction. Compare against the live pool below
           to see how much liquidity a given target would actually need.
