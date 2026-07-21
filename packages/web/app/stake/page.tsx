@@ -3,7 +3,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { StakingPanel } from "@/components/StakingPanel";
 
 export const metadata = {
-  title: "Stake WETH | WETH Staking",
+  title: "Stake WETH | FLEX Staking",
 };
 
 export default function StakePage() {

@@ -3,7 +3,7 @@ import { RwdStakingDashboard } from "@/components/RwdStakingDashboard";
 import { RwdStakingPanel } from "@/components/RwdStakingPanel";
 
 export const metadata = {
-  title: "Stake FLX | WETH Staking",
+  title: "Stake FLX | FLEX Staking",
 };
 
 export default function StakeRwdPage() {

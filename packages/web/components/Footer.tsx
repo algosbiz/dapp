@@ -23,7 +23,7 @@ export function Footer() {
                 W
               </span>
               <span className="font-display text-base font-extrabold tracking-tight text-canvas">
-                WETH Staking
+                FLEX Staking
               </span>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-canvas-soft/70">

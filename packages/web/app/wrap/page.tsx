@@ -2,7 +2,7 @@ import Link from "next/link";
 import { WrapPanel } from "@/components/WrapPanel";
 
 export const metadata = {
-  title: "Wrap ETH | WETH Staking",
+  title: "Wrap ETH | FLEX Staking",
 };
 
 export default function WrapPage() {

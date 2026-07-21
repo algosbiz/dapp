@@ -435,7 +435,47 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 25. Interactive network globe in the hero (2026-07-21, latest)
+### 26. Globe gets real continents, a 3D wordmark, and the app is rebranded FLEX (2026-07-21, latest)
+
+Three requests in one: continent silhouettes on the globe, "Robinhood Chain" in 3D behind it,
+and the navbar's green "W" replaced by a FLEX mark with the name "FLEX Staking".
+
+**Continents — real data, not hand-drawn.** `scripts/generate-land-mask.mjs` converts Natural
+Earth's public-domain 110m land polygons into a 180×90 equirectangular bitmask, packed to
+base64 in `lib/landMask.ts` (~8 kB file, no runtime dependency and no fetch). The globe now
+scatters 5,200 sphere points and keeps only the ~1,700 that land on ground, so the dots draw
+coastlines. Verified by printing the mask as ASCII: Greenland, the Americas tapering south,
+Africa, Eurasia and Antarctica are all recognisable, and 33% of cells are land — right for
+unweighted equirectangular sampling. Since there are no ocean dots left to imply the sphere,
+a faint limb circle traces its edge and far-side land fades on a squared falloff so the
+continents facing you stay readable.
+
+**The 3D wordmark took three passes, and both dead ends are worth knowing.** First attempt used
+a CSS `perspective`/`rotateX` — browsers rasterise 3D-transformed text to a texture *before*
+transforming it, so the wordmark was visibly soft at every angle tried, next to crisp body copy.
+Second: dropping the transform didn't fix it either, because the real culprit was the extrusion
+being a stack of *semi-transparent* shadows, which blend into a halo that reads as blur. The
+version that works uses a flat 2D tilt plus **opaque** extrusion layers stepping `canvas` →
+`brand-pale` → `brand-neutral`.
+
+Sizing it needed container queries, not `vw`: the globe column is ~45vw on desktop but ~90vw on
+a phone, so any single viewport-based size that clears the sphere on one is narrower than it on
+the other — and a wordmark narrower than the globe shows only stray fragments between
+continents, which looks accidental. `container-type: inline-size` + `11cqw` keeps it wider than
+the sphere at every width.
+
+**Found while measuring:** the hero's globe column had `lg:justify-self-end`, which shrink-wraps
+a grid item to its content — the canvas was stuck at 300px inside a ~520px column, so the globe
+had never actually been filling its half. Removing it took the canvas to 502px. Worth
+remembering: `justify-self` on a grid child silently defeats `w-full`.
+
+**Rebrand:** navbar shows a drawn `FlexMark` (an "F" whose arms bend right — a stand-in, since
+no brand asset was supplied; swap the SVG, nothing else references it) and reads "FLEX Staking".
+The name was changed in all 10 other places it appeared too — page titles, layout metadata, the
+footer, and wagmi's `appName` (which is what wallets display on connect) — since a half-renamed
+app is worse than either state.
+
+### 25. Interactive network globe in the hero (2026-07-21)
 
 Boss wanted the homepage banner to carry an interactive green globe standing for Robinhood
 Chain, styled after the dotted sphere on the official testnet faucet page.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { buildSphere, projectPoint } from "@/lib/globe";
+import { buildLandPoints, projectPoint } from "@/lib/globe";
 
 /**
  * Interactive particle globe standing in for the Robinhood Chain network.
@@ -15,8 +15,11 @@ import { buildSphere, projectPoint } from "@/lib/globe";
  * the network answering back.
  */
 
-/** Raised with the globe: the same count spread over a much larger sphere reads as sparse. */
-const POINT_COUNT = 1500;
+/**
+ * Points are scattered over the whole sphere and then filtered down to the ones on land, so
+ * only about a third survive — oversample to land on ~1,700 dots of actual coastline.
+ */
+const SAMPLE_COUNT = 5200;
 /** Perspective strength. Lower = more dramatic foreshortening. */
 const FOV = 2.4;
 const PULSE_MS = 1100;
@@ -33,7 +36,7 @@ export function NetworkGlobe() {
     const context = canvas?.getContext("2d");
     if (!canvas || !wrap || !context) return;
 
-    const points = buildSphere(POINT_COUNT);
+    const points = buildLandPoints(SAMPLE_COUNT);
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let width = 0;
@@ -78,12 +81,20 @@ export function NetworkGlobe() {
 
       pulses = pulses.filter((p) => time - p.start < PULSE_MS);
 
+      // With only land drawn there are no ocean dots to imply the sphere, so trace its limb.
+      context.beginPath();
+      context.arc(cx, cy, globeRadius, 0, Math.PI * 2);
+      context.strokeStyle = "rgba(5, 77, 40, 0.15)";
+      context.lineWidth = 1;
+      context.stroke();
+
       for (const point of points) {
         const { px, py, depth, scale } = projectPoint(point, projection);
 
-        // Depth ramp: near points read solid, far points fade toward the page.
-        let alpha = 0.1 + depth * 0.78;
-        let size = (0.7 + depth * 1.5) * scale;
+        // Squared falloff: continents on the far side ghost away instead of competing with
+        // the ones facing you, which matters now that there's no ocean fill between them.
+        let alpha = 0.05 + depth * depth * 0.85;
+        let size = (0.55 + depth * 1.5) * scale;
         let bright = false;
 
         // A click sends an expanding ring; points it sweeps past light up briefly.
@@ -213,6 +224,22 @@ export function NetworkGlobe() {
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-1/2 h-4/5 w-4/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/35 blur-3xl"
         />
+
+        {/* Extruded wordmark sitting behind the globe. CSS 3D rather than a WebGL text mesh:
+            a rotated element plus a stack of offset shadows gives the depth, costs nothing,
+            and keeps it real selectable-free decoration. aria-hidden because the hero heading
+            and the "Live on Robinhood Chain" badge already say this in the accessibility tree. */}
+        <div
+          aria-hidden="true"
+          className="globe-wordmark pointer-events-none absolute inset-0 grid place-items-center"
+        >
+          {/* Sized to run WIDER than the globe on purpose: a wordmark narrower than the sphere
+              shows only stray fragments between continents, which reads as an accident rather
+              than as something deliberately sitting behind. */}
+          <span className="globe-wordmark-text whitespace-nowrap font-display font-extrabold leading-none tracking-[-0.035em]">
+            Robinhood Chain
+          </span>
+        </div>
         {/* Decorative: nothing here is information the surrounding copy doesn't already carry. */}
         <canvas ref={canvasRef} aria-hidden="true" className="relative block h-full w-full cursor-pointer" />
       </div>

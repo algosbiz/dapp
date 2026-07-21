@@ -49,8 +49,10 @@ export function Hero() {
           </ul>
         </div>
 
-        {/* Right — the network itself, as an object you can push around */}
-        <div className="lg:justify-self-end">
+        {/* Right — the network itself, as an object you can push around.
+            No `justify-self-end` here: that shrink-wraps the grid item to its content, which
+            capped the globe at ~300px inside a ~520px column. Default stretch lets it fill. */}
+        <div className="w-full">
           <NetworkGlobe />
         </div>
       </div>

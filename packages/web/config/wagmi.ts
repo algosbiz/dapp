@@ -9,7 +9,7 @@ import { hardhatLocal, robinhoodChain, robinhoodTestnet } from "./chains";
 // robinhoodChain and hardhatLocal stay available for the wallet's network switcher; drop
 // robinhoodChain once contracts actually deploy to mainnet and this goes production-only.
 export const wagmiConfig = getDefaultConfig({
-  appName: "WETH Staking",
+  appName: "FLEX Staking",
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
   chains: [robinhoodTestnet, robinhoodChain, hardhatLocal],
   transports: {

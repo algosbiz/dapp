@@ -36,6 +36,27 @@ const isGroup = (entry: NavEntry): entry is NavGroup => "items" in entry;
 /** Route-path portion of an href (drops any #hash), for active-state matching. */
 const pathOf = (href: string) => href.split("#")[0];
 
+/**
+ * FLEX mark. There's no supplied brand asset, so this is a drawn stand-in: an "F" whose two
+ * arms bend to the right, reading as both the letter and something flexing. Swap the SVG here
+ * if a real logo ever lands — nothing else references it.
+ */
+function FlexMark() {
+  return (
+    <span className="grid h-8 w-8 place-items-center rounded-control bg-brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M7 20V5.5C7 4.67 7.67 4 8.5 4H18"
+          stroke="#0e0f0c"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path d="M7 12h7.5" stroke="#0e0f0c" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+}
+
 function MenuIcon({ open }: { open: boolean }) {
   if (open) {
     return (
@@ -145,11 +166,9 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-canvas/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-container items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-control bg-brand text-base font-black text-ink">
-            W
-          </span>
+          <FlexMark />
           <span className="font-display text-base font-extrabold tracking-tight text-ink">
-            WETH Staking
+            FLEX Staking
           </span>
         </Link>
 

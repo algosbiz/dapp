@@ -6,7 +6,7 @@ import { LpFarmPanel } from "@/components/LpFarmPanel";
 import { SupplyPanel } from "@/components/SupplyPanel";
 
 export const metadata = {
-  title: "Farm | WETH Staking",
+  title: "Farm | FLEX Staking",
 };
 
 // Always re-read the on-disk snapshot history instead of serving a build-time copy.

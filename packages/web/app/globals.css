@@ -12,6 +12,44 @@ body {
   color: #0e0f0c;
 }
 
+/* Wordmark behind the network globe. The perspective + rotation tilts it into the page, and
+   the shadow stack extrudes it — cheaper and crisper than rendering 3D text on a canvas. */
+/* Sized against the globe's own box, not the viewport: the column is ~45vw on desktop but
+   ~90vw on a phone, so any single vw-based size that clears the sphere on one ends up
+   narrower than it on the other — and a wordmark narrower than the globe shows only fragments. */
+.globe-wordmark {
+  container-type: inline-size;
+}
+
+/* Face and extrusion are all `ink` at increasing opacity over the sage page, so the depth
+   ramp stays inside the documented palette instead of introducing new greys. */
+/* Extruded wordmark behind the globe.
+   Two things learned the hard way here, both worth keeping:
+   1. No 3D transform. Browsers rasterise 3D-transformed text to a texture before transforming
+      it, so the wordmark softened at every angle tried. A flat 2D tilt stays sharp.
+   2. The extrusion layers must be OPAQUE. A stack of semi-transparent shadows blends into a
+      halo that reads as blur, not depth — that, not the transform, was the real smudge.
+   Face is `canvas`, the extrusion steps through `brand-pale` into `brand-neutral`, so the
+   depth ramp is entirely palette colours. */
+.globe-wordmark-text {
+  /* Viewport-based fallback first, then container units where supported. 11cqw makes the
+     wordmark a little wider than the sphere (which spans 88% of the box) at every size. */
+  font-size: clamp(1.5rem, 5.6vw, 3.4rem);
+  font-size: 11cqw;
+  color: #ffffff;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  text-shadow:
+    1px 1px 0 #e2f6d5,
+    2px 2px 0 #e2f6d5,
+    3px 3px 0 #c5edab,
+    4px 4px 0 #c5edab,
+    5px 5px 0 #c5edab,
+    6px 6px 0 #c5edab,
+    7px 7px 0 #c5edab;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

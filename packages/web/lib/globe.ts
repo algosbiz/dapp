@@ -5,6 +5,8 @@
  * hidden), but this math can be checked anywhere.
  */
 
+import { isLand } from "@/lib/landMask";
+
 export type GlobePoint = { x: number; y: number; z: number };
 
 export type Projected = {
@@ -31,6 +33,29 @@ export function buildSphere(count: number): GlobePoint[] {
     points.push({ x: Math.cos(theta) * radius, y, z: Math.sin(theta) * radius });
   }
   return points;
+}
+
+/**
+ * Converts a unit-sphere point to latitude/longitude in degrees. `y` is the polar axis, so the
+ * globe spins the way Earth does.
+ */
+export function toLatLon(point: GlobePoint): { lat: number; lon: number } {
+  return {
+    lat: (Math.asin(Math.max(-1, Math.min(1, point.y))) * 180) / Math.PI,
+    lon: (Math.atan2(point.z, point.x) * 180) / Math.PI,
+  };
+}
+
+/**
+ * Scatters `sampleCount` points over the sphere and keeps only the ones that fall on land, so
+ * the dots draw continent silhouettes instead of an even shell. Roughly a third survive —
+ * oversample accordingly.
+ */
+export function buildLandPoints(sampleCount: number): GlobePoint[] {
+  return buildSphere(sampleCount).filter((point) => {
+    const { lat, lon } = toLatLon(point);
+    return isLand(lat, lon);
+  });
 }
 
 /** Rotates a point around Y (spin) then X (tilt), and projects it with perspective. */
