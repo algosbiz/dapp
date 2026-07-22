@@ -231,18 +231,29 @@ export function LockedStakingPanel() {
                       <ButtonContent busy={activeLabel === "Withdraw"} label="Withdraw principal + reward" busyLabel="Withdrawing…" />
                     </button>
                   ) : (
-                    <button
-                      disabled={isBusy}
-                      onClick={() => run("Withdraw early", () => withdrawEarly(BigInt(p.id)))}
-                      className={`${buttonBase} mt-3 w-full border border-negative/40 text-negative-deep hover:bg-negative/5`}
-                      title="Leaving early burns 5% of your stake and forfeits the reward."
-                    >
-                      <ButtonContent
-                        busy={activeLabel === "Withdraw early"}
-                        label={`Withdraw early — burns ${formatToken((p.amount * 500n) / 10_000n)} FLX`}
-                        busyLabel="Withdrawing…"
-                      />
-                    </button>
+                    <>
+                      {/* The burn amount is deliberately OUTSIDE the button label. Inside a
+                          whitespace-nowrap button it grew with the number and spilled past the
+                          button edge on narrow screens — a 1,234,567 FLX lock needs ~301px of
+                          label against ~278px available on a 390px phone. As its own wrapping
+                          line the warning is width-proof, and reads better besides. */}
+                      <p className="mt-3 text-xs leading-relaxed text-negative-deep">
+                        Leaving now burns{" "}
+                        <span className="font-bold">{formatToken((p.amount * 500n) / 10_000n)} FLX</span> (5%)
+                        and forfeits the reward.
+                      </p>
+                      <button
+                        disabled={isBusy}
+                        onClick={() => run("Withdraw early", () => withdrawEarly(BigInt(p.id)))}
+                        className={`${buttonBase} mt-1.5 w-full border border-negative/40 text-negative-deep hover:bg-negative/5`}
+                      >
+                        <ButtonContent
+                          busy={activeLabel === "Withdraw early"}
+                          label="Withdraw early"
+                          busyLabel="Withdrawing…"
+                        />
+                      </button>
+                    </>
                   )}
                 </li>
               );

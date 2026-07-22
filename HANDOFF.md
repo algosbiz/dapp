@@ -1178,3 +1178,53 @@ npm run contracts:snapshot            # manual snapshot run (root package.json a
   the expected effect, don't conclude the app is broken from that alone: cross-check with a
   direct DOM dispatch (`el.click()` via `javascript_tool`) or a fresh `find` ref before
   suspecting the component's own logic.
+
+## 30. UI glitch audit — never put a variable-length number in a button label
+
+Full-app sweep for layout escapes ("text keluar dari button"). A DOM detector measured, on every
+page, four things: page-level horizontal overflow, content wider than its own box, elements past
+the viewport's right edge, and buttons whose label wrapped to 2+ lines.
+
+**Nine pages audited clean** at 1151px — `/lock`, `/pool`, `/farm`, `/stake`, `/stake-rwd`,
+`/wrap`, `/tokenomics`, `/emissions`, `/`. No horizontal page overflow anywhere.
+
+**One real glitch found and fixed**, in `LockedStakingPanel.tsx`. Its early-exit button label was
+built from a live number:
+
+```
+label={`Withdraw early — burns ${formatToken(...)} FLX`}   // ← the bug
+```
+
+Every action button shares a `buttonBase` that includes **`whitespace-nowrap`** (added earlier so
+busy labels like "Approving…" can't reflow to two lines). Nowrap means an over-long label can't
+wrap — it *spills outside the button*. Measured: the label needs ~301px for a 1,234,567 FLX lock
+against ~278px of inner space on a 390px phone, so it escaped by ~23px.
+
+Fix: the number moved **out** of the button into its own wrapping `<p>` above it; the button now
+carries the fixed short label "Withdraw early". Verified by injecting `9,876,543.2109 FLX` at a
+simulated 358px width — the warning wraps to two lines and nothing overflows.
+
+**Rule this establishes:** with `whitespace-nowrap` on every action button, a button label must be
+a *fixed string*. Anything whose width depends on user input or chain state (amounts, balances,
+token totals) belongs in body text next to the button, not inside it. Audited the other dynamic
+labels against this rule — `WrapPanel.tsx` ("Wrap"/"Unwrap"/"Enter an amount") and `SwapPanel.tsx`
+("Swap"/"Approve WETH"/"Confirm price impact to continue") are all fixed strings, so they're safe.
+
+### Auditing wallet-gated panels
+
+The eight action panels return an early "Connect your wallet" card when disconnected, which hides
+every button from an automated audit. To see them, temporarily neuter the guard:
+
+```
+if (!isConnected && false /* TEMP-DESIGN-QA */) {
+```
+
+**This must be reverted before committing** (`grep -rn "TEMP-DESIGN-QA" packages/web` must come back
+empty). It was applied to all 8 panels for this audit and reverted afterwards.
+
+### Testing narrow widths without a resizable window
+
+The Chrome-automation window would not shrink below `innerWidth: 732`, so phone widths can't be
+tested by resizing. Workaround that did work: temporarily set the page shell's width in-page
+(`shell.style.maxWidth = '358px'`), measure, then restore. That exercises the real CSS at phone
+width without touching the window.
