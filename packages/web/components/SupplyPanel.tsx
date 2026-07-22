@@ -6,7 +6,7 @@ import { erc20Abi } from "@/abi/erc20";
 import { wethRwdPoolAbi } from "@/abi/wethRwdPool";
 import { CONTRACTS } from "@/config/contracts";
 import { APR_PRECISION, convertByPoolPrice } from "@/lib/apr";
-import { formatToken, formatUsdHeadline, formatWethHeadline } from "@/lib/format";
+import { formatCountHeadline, formatUsdHeadline, formatWethHeadline } from "@/lib/format";
 import { fetchEthUsdPrice } from "@/lib/price";
 
 type Snapshot = {
@@ -115,13 +115,13 @@ export async function SupplyPanel() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard
         label="Total FLX supply"
-        value={formatToken(totalSupply)}
+        value={formatCountHeadline(totalSupply)}
         unit="FLX"
         caption="Every FLX that exists so far. This number only ever goes up."
       />
       <MetricCard
         label="Minted, last 7 days"
-        value={minted7d !== undefined ? formatToken(minted7d) : "—"}
+        value={minted7d !== undefined ? formatCountHeadline(minted7d) : "—"}
         unit={minted7d !== undefined ? "FLX" : undefined}
         caption={
           minted7d !== undefined
@@ -131,7 +131,7 @@ export async function SupplyPanel() {
       />
       <MetricCard
         label="Minted, last 30 days"
-        value={minted30d !== undefined ? formatToken(minted30d) : "—"}
+        value={minted30d !== undefined ? formatCountHeadline(minted30d) : "—"}
         unit={minted30d !== undefined ? "FLX" : undefined}
         caption={
           minted30d !== undefined
@@ -175,7 +175,7 @@ function MetricCard({
   return (
     <div className="flex min-w-0 flex-col rounded-card bg-canvas p-6 shadow-card">
       <p className="text-sm font-semibold text-ink-body">{label}</p>
-      <p className="mt-2 break-words text-3xl font-extrabold tracking-tight text-ink">
+      <p className="mt-2 whitespace-nowrap text-3xl font-extrabold tracking-tight text-ink tabular-nums">
         {value}
         {unit && <span className="ml-1 text-lg font-semibold text-ink-body">{unit}</span>}
       </p>

@@ -31,6 +31,24 @@ export function formatTokenSmart(value: bigint | undefined): string {
 }
 
 /**
+ * Overflow-safe headline for a token COUNT in a narrow stat tile. A supply like 21,907.5701
+ * doesn't need its fractional part and, at a big font in a slim card, was wrapping to a second
+ * line ("21,907.57" / "01 FLX"). So: no decimals once into the thousands, compact notation past
+ * a million — but keep a couple of decimals below 1,000, and significant digits for dust, so
+ * small mint amounts aren't flattened to "0".
+ */
+export function formatCountHeadline(value: bigint | undefined): string {
+  if (value === undefined) return "—";
+  const num = Number(formatEther(value));
+  if (num === 0) return "0";
+  const abs = Math.abs(num);
+  if (abs >= 1_000_000) return num.toLocaleString(undefined, { notation: "compact", maximumFractionDigits: 2 });
+  if (abs >= 1000) return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (abs >= 1) return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return num.toLocaleString(undefined, { maximumSignificantDigits: 4 });
+}
+
+/**
  * Compact display for a WETH-denominated headline figure shown in a narrow stat tile:
  * caps at 2 decimals for ordinary values and switches to compact notation past a million,
  * so a big market cap like 2,490.38 never overflows its card. Keeps extra precision only

@@ -4,7 +4,7 @@ import { erc20Abi } from "@/abi/erc20";
 import { masterChefAbi } from "@/abi/masterChef";
 import { wethStakingRewardsAbi } from "@/abi/wethStakingRewards";
 import { CONTRACTS } from "@/config/contracts";
-import { formatToken } from "@/lib/format";
+import { formatCountHeadline, formatToken } from "@/lib/format";
 
 /**
  * Read-only snapshot of supply + every reward-emission setting across all three products.
@@ -91,8 +91,9 @@ export async function EmissionsPanel() {
     <div className="space-y-6">
       <div className="rounded-card bg-canvas p-6 shadow-card sm:p-8">
         <p className="text-sm font-semibold text-ink-body">Total FLX supply</p>
-        <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {formatToken(data.rwdTotalSupply)} <span className="text-lg font-semibold text-ink-body">FLX</span>
+        <p className="mt-2 whitespace-nowrap text-3xl font-extrabold tracking-tight text-ink tabular-nums">
+          {formatCountHeadline(data.rwdTotalSupply)}{" "}
+          <span className="text-lg font-semibold text-ink-body">FLX</span>
         </p>
         <p className="mt-2 text-xs text-ink-body">
           Read live from the contract. Can only ever increase — there is no burn function.
