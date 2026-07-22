@@ -39,7 +39,7 @@ const pathOf = (href: string) => href.split("#")[0];
 
 /**
  * The FLEX mark. `token-mark.png` is the supplied `token.png` cropped to just the globe emblem
- * (dropping the "$FLEX" wordmark, which is redundant next to the "FLEX Staking" text and
+ * (dropping the "$FLEX" wordmark, which is redundant next to the "$FLEX Staking" text and
  * illegible at 32px) and resized down from 500px. Not round-clipped: the emblem sits on
  * transparency and its orbit lines reach the corners, so a circular mask would clip them.
  * Regenerate after swapping token.png:
@@ -160,7 +160,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2.5">
           <FlexMark />
           <span className="font-display text-base font-extrabold tracking-tight text-ink">
-            FLEX Staking
+            $FLEX Staking
           </span>
         </Link>
 

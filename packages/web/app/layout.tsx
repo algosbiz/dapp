@@ -17,7 +17,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "FLEX Staking — Put your WETH to work on Robinhood Chain",
+  title: "$FLEX Staking — Put your WETH to work on Robinhood Chain",
   description:
     "Non-custodial single-asset WETH staking on Robinhood Chain. Stake WETH, earn reward tokens streamed every second, and withdraw or claim any time.",
 };

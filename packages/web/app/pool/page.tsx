@@ -4,7 +4,7 @@ import { PoolPanel } from "@/components/PoolPanel";
 import { SwapPanel } from "@/components/SwapPanel";
 
 export const metadata = {
-  title: "WETH/FLEX Pool | FLEX Staking",
+  title: "WETH/FLEX Pool | $FLEX Staking",
 };
 
 export default function PoolPage() {

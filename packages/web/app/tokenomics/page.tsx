@@ -2,7 +2,7 @@ import Link from "next/link";
 import { TokenomicsCalculator } from "@/components/TokenomicsCalculator";
 
 export const metadata = {
-  title: "Tokenomics Calculator | FLEX Staking",
+  title: "Tokenomics Calculator | $FLEX Staking",
 };
 
 export default function TokenomicsPage() {

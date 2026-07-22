@@ -3,7 +3,7 @@ import { EmissionsPanel } from "@/components/EmissionsPanel";
 import { EmissionRateRequestForm } from "@/components/EmissionRateRequestForm";
 
 export const metadata = {
-  title: "Emissions & Supply | FLEX Staking",
+  title: "Emissions & Supply | $FLEX Staking",
 };
 
 export default function EmissionsPage() {
