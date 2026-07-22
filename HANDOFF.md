@@ -435,7 +435,36 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 27. Sharper continents + the real FLEX coin in the navbar (2026-07-21, latest)
+### 28. Emission split re-weighted to 10 / 60 / 30 (2026-07-21, latest)
+
+Boss wanted FLX emission split **WETH pool 10% · LP pool 60% · FLX-FLX 30%**, total held at
+0.01 FLX/sec. First had to correct the mental model: these three don't share one contract.
+WETH + LP are **MasterChef pools** (split by allocPoint, permanent ratio); FLX-FLX is a
+**separate pre-funded** `WethStakingRewards` pool (rate is a consequence of funding, a snapshot
+that needs periodic re-funding). So the split spans two mechanisms:
+
+- Farm-wide `rewardPerSecond` 0.01 → **0.007** (= WETH 0.001 + LP 0.006), allocPoints
+  1000/1000 → **100/600**.
+- FLX-FLX funded up to **0.003/sec** via `notifyRewardAmount`.
+
+Done with `packages/contracts/scripts/set-emission-split.ts` (reusable — edit the constants at
+the top and re-run to re-weight again; `DRY=1` previews without sending tx). Confirmed on-chain:
+farm 0.007, WETH pool 0.001, LP pool 0.006, FLX-FLX 0.00299996 (integer-division rounding in
+`notifyRewardAmount`, i.e. exactly 0.003 to display precision).
+
+**Cost worth remembering:** raising FLX-FLX to 0.003/sec required minting **1,207.57 FLX**
+(supply 10,700 → 11,907.57), because a pre-funded pool must actually hold `rate × duration`
+tokens to advertise that rate. It also needs re-funding each ~7-day period (~1,814 FLX/period)
+to hold the rate — unlike the farm's 10:60, which is a permanent allocPoint ratio needing no
+upkeep. This is the structural asymmetry that was flagged to the user before proceeding.
+
+**UI:** `EmissionsPanel` now shows each FLX product's share of the **total FLX emitted per
+second** (farm rate + FLX-FLX rate = 0.01), not the within-farm WETH-vs-LP split — so it reads
+the 10% / 60% / 30% the boss thinks in, rather than 14%/86% within the farm alone. The
+WETH→tFLX stake is excluded from that pie (tFLX is a different token). `shareOfTotal()` replaced
+the old `allocPercent()`.
+
+### 27. Sharper continents + the real FLEX coin in the navbar (2026-07-21)
 
 User asked for the globe's continents to look like the actual continents, and for the drawn
 "F" mark to be replaced by supplied artwork at `public/token.png`.

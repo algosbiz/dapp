@@ -69,15 +69,23 @@ function fundingStatus(periodFinish: bigint): { label: string; active: boolean }
   return { label: active ? `Funded until ${date}` : `Funding period ended ${date}`, active };
 }
 
-function allocPercent(alloc: bigint, total: bigint): string {
+/** A rate's share of the total FLX emitted per second (farm pools + FLX staking). This is the
+ *  "10% / 60% / 30%" framing people think in — each product's slice of all FLX minted — rather
+ *  than the WETH-vs-LP split within the farm alone, which would read as 14%/86%. */
+function shareOfTotal(rate: bigint, total: bigint): string {
   if (total === 0n) return "—";
-  return `${((Number(alloc) / Number(total)) * 100).toFixed(0)}%`;
+  return `${((Number(rate) / Number(total)) * 100).toFixed(0)}%`;
 }
 
 export async function EmissionsPanel() {
   const data = await fetchEmissionsData();
   const stakeStatus = fundingStatus(data.stake.periodFinish);
   const rwdStakeStatus = fundingStatus(data.rwdStake.periodFinish);
+
+  // Total FLX minted per second = the farm's rate + the FLX-FLX pool's rate. (The WETH→tFLX
+  // pool pays tFLX, a different token, so it's not part of this FLX pie.) Used to express each
+  // FLX product as a share of the whole — the 10/60/30 the split is configured to.
+  const totalFlxPerSec = data.farm.rewardPerSecond + data.rwdStake.rewardRate;
 
   return (
     <div className="space-y-6">
@@ -95,6 +103,7 @@ export async function EmissionsPanel() {
         <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">Farm (MasterChef)</h2>
         <p className="mt-1 text-sm text-ink-body">
           Mint-on-demand — new FLX is created every second and split across two pools.
+          Percentages are each pool&apos;s share of all FLX emitted per second.
         </p>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-control bg-canvas-soft p-4">
@@ -104,14 +113,14 @@ export async function EmissionsPanel() {
           </div>
           <div className="rounded-control bg-canvas-soft p-4">
             <p className="text-xs font-semibold text-ink-body">
-              → WETH pool ({allocPercent(data.farm.wethAlloc, data.farm.totalAllocPoint)})
+              → WETH pool ({shareOfTotal(data.farm.wethPoolRate, totalFlxPerSec)})
             </p>
             <p className="mt-1 text-xl font-bold text-ink">{formatToken(data.farm.wethPoolRate, 6)}</p>
             <p className="text-xs text-ink-body">FLX / sec</p>
           </div>
           <div className="rounded-control bg-canvas-soft p-4">
             <p className="text-xs font-semibold text-ink-body">
-              → LP pool ({allocPercent(data.farm.lpAlloc, data.farm.totalAllocPoint)})
+              → LP pool ({shareOfTotal(data.farm.lpPoolRate, totalFlxPerSec)})
             </p>
             <p className="mt-1 text-xl font-bold text-ink">{formatToken(data.farm.lpPoolRate, 6)}</p>
             <p className="text-xs text-ink-body">FLX / sec</p>
@@ -139,7 +148,9 @@ export async function EmissionsPanel() {
           <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">Stake FLX (FLX → FLX)</h2>
           <p className="mt-1 text-sm text-ink-body">Pre-funded — a separate reward budget, same model as above.</p>
           <div className="mt-4 rounded-control bg-canvas-soft p-4">
-            <p className="text-xs font-semibold text-ink-body">Reward rate</p>
+            <p className="text-xs font-semibold text-ink-body">
+              Reward rate ({shareOfTotal(data.rwdStake.rewardRate, totalFlxPerSec)} of FLX emission)
+            </p>
             <p className="mt-1 text-xl font-bold text-ink">{formatToken(data.rwdStake.rewardRate, 6)}</p>
             <p className="text-xs text-ink-body">FLX / sec</p>
           </div>
