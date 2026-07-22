@@ -38,21 +38,15 @@ const isGroup = (entry: NavEntry): entry is NavGroup => "items" in entry;
 const pathOf = (href: string) => href.split("#")[0];
 
 /**
- * The FLEX coin. `token-mark.png` is the supplied artwork cropped to the coin and resized to
- * 160px (the original is 1106px / 1.2 MB — far too heavy for a 32px navbar icon). Round-clipped
- * because the source is square with a little background left in the corners.
+ * The FLEX mark. `token-mark.png` is the supplied `token.png` cropped to just the globe emblem
+ * (dropping the "$FLEX" wordmark, which is redundant next to the "FLEX Staking" text and
+ * illegible at 32px) and resized down from 500px. Not round-clipped: the emblem sits on
+ * transparency and its orbit lines reach the corners, so a circular mask would clip them.
+ * Regenerate after swapping token.png:
+ *   ffmpeg -y -i token.png -vf "crop=400:400:50:0,scale=160:160:flags=lanczos" token-mark.png
  */
 function FlexMark() {
-  return (
-    <Image
-      src="/token-mark.png"
-      alt=""
-      width={32}
-      height={32}
-      priority
-      className="h-8 w-8 rounded-full"
-    />
-  );
+  return <Image src="/token-mark.png" alt="" width={32} height={32} priority className="h-8 w-8" />;
 }
 
 function MenuIcon({ open }: { open: boolean }) {
