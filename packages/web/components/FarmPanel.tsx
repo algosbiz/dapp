@@ -9,7 +9,7 @@ import { ButtonContent } from "@/components/Spinner";
 import { formatToken } from "@/lib/format";
 
 const buttonBase =
-  "rounded-card px-4 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+  "rounded-card px-4 py-3 text-base font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
 export function FarmPanel() {
   const { isConnected } = useAccount();

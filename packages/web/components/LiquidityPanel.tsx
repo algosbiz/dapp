@@ -9,7 +9,7 @@ import { ButtonContent } from "@/components/Spinner";
 import { formatToken } from "@/lib/format";
 
 const buttonBase =
-  "rounded-card px-4 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+  "rounded-card px-4 py-3 text-base font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
 function parseAmount(value: string): bigint {
   try {
@@ -156,21 +156,26 @@ export function LiquidityPanel() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <button
-            disabled={!needsApproval0 || amount0 === 0n || isBusy}
-            onClick={() => run("Approve WETH", () => approveToken0(amount0))}
-            className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
-          >
-            <ButtonContent busy={activeLabel === "Approve WETH"} label="Approve WETH" busyLabel="Approving…" />
-          </button>
-          <button
-            disabled={!needsApproval1 || amount1 === 0n || isBusy}
-            onClick={() => run("Approve FLX", () => approveToken1(amount1))}
-            className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
-          >
-            <ButtonContent busy={activeLabel === "Approve FLX"} label="Approve FLX" busyLabel="Approving…" />
-          </button>
+        {/* Two approvals side by side, then Add full-width as the primary action. Cramming all
+            three into one row squeezed "Approve WETH" onto two lines (and let the busy label
+            spill out) once the card was half-width on desktop. */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              disabled={!needsApproval0 || amount0 === 0n || isBusy}
+              onClick={() => run("Approve WETH", () => approveToken0(amount0))}
+              className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
+            >
+              <ButtonContent busy={activeLabel === "Approve WETH"} label="Approve WETH" busyLabel="Approving…" />
+            </button>
+            <button
+              disabled={!needsApproval1 || amount1 === 0n || isBusy}
+              onClick={() => run("Approve FLX", () => approveToken1(amount1))}
+              className={`${buttonBase} bg-canvas-soft text-ink hover:bg-ink/5`}
+            >
+              <ButtonContent busy={activeLabel === "Approve FLX"} label="Approve FLX" busyLabel="Approving…" />
+            </button>
+          </div>
           <button
             disabled={
               needsApproval0 ||
@@ -186,7 +191,7 @@ export function LiquidityPanel() {
                 addLiquidity(amount0, amount1, withSlippage(amount0), withSlippage(amount1))
               )
             }
-            className={`${buttonBase} bg-brand text-ink hover:bg-brand-active`}
+            className={`${buttonBase} w-full bg-brand text-ink hover:bg-brand-active`}
           >
             <ButtonContent busy={activeLabel === "Add liquidity"} label="Add" busyLabel="Adding…" />
           </button>
