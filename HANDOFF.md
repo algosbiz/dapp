@@ -435,7 +435,46 @@ just be ~30 seconds of real continuous mint activity between the two reads, not 
 bug — worth double-checking with a fresh reload before concluding "stale" on a supply number
 that changes every second.
 
-### 28. Emission split re-weighted to 10 / 60 / 30 (2026-07-21, latest)
+### 29. Capped/burnable FLX + LockedStaking (the deflationary side) (2026-07-22, latest)
+
+Boss's whiteboard: a 10M-cap, burnable FLX, plus a locked-staking product (1/2/3-month tiers,
+5% early-exit penalty that's *burned*) — explicitly "the opposite of inflation" vs the farm.
+The old FLX couldn't do either (no burn, no cap, and a deployed contract is immutable), so this
+needed a new token + redeploy. On testnet with ~no real holders, that's cheap and clean — same
+call as the FLEX rename.
+
+**Token** (`RewardToken.sol`): now `ERC20 + ERC20Burnable + ERC20Capped(10M) + Ownable`. Cap is
+a ceiling on *current* supply (burning frees minting room, never above 10M — not a lifetime
+mint budget; note this if the boss expected the latter). Mint stays owner-only (the MasterChef).
+
+**LockedStaking** (`LockedStaking.sol`): stake FLX picking a tier (0/1/2 = 1/2/3 months =
+30/60/90 days), earn linear-APR rewards (10% / 25% / 50%, owner-tunable via `setApr`, snapshot
+per-position so live positions keep their agreed rate). Min stake 3000 FLX (`setMinStake`).
+`withdraw` after unlock = principal + reward, paid from a pre-funded budget as
+`min(owed, budget)` so an empty budget can never trap principal. `withdrawEarly` burns exactly
+5% of principal via `token.burn()` (real supply reduction — the deflation lever) and returns
+95%; accrued reward is forfeited and stays as budget. Reward budget = `balanceOf(this) -
+totalStaked`, topped up via `fundRewards`. 10 tests + 5 token tests, all green (50 total).
+
+**Deploy** (`scripts/deploy-full-stack.ts`, one orchestration script, prints each address as it
+lands): new FLX + MasterChef + AMM + Stake-FLEX + LockedStaking, re-seeded — founding liquidity
+0.0003 WETH / 3000 FLX (smaller than before to fit a tight ~0.002 ETH gas budget; still 1 WETH =
+10M FLX), LP burned; the **10/60/30 split baked in at deploy** (farm-wide 0.007, allocPoints
+100/600 → WETH 0.001 / LP 0.006, Stake-FLEX funded to 0.003); LockedStaking funded 20,000 FLX;
+10,000 FLX minted to the boss again. Whole thing cost **~0.0004 ETH gas** in one run. FLX supply
+after: 34,814 / 10M cap.
+
+**Frontend**: new `/lock` page + `LockedStakingPanel` (tier picker with live APR, min-3000
+guard, approve+lock, position list with live unlock countdown + accruing reward, and
+withdraw / withdraw-early buttons — the early one is red and shows the exact FLX it will burn).
+`hooks/useLockedStaking.ts` (+ `computePendingReward` mirroring the contract so the list needs no
+per-position RPC), `abi/lockedStaking.ts`, `CONTRACTS.lockedStaking` (new env
+`NEXT_PUBLIC_LOCKED_STAKING_ADDRESS`), navbar "Earn → Lock FLX".
+
+**Still pending (user):** Vercel env vars — same five as before plus the new
+`NEXT_PUBLIC_LOCKED_STAKING_ADDRESS` — must be updated or the live site reads the dead contracts.
+
+### 28. Emission split re-weighted to 10 / 60 / 30 (2026-07-21)
 
 Boss wanted FLX emission split **WETH pool 10% · LP pool 60% · FLX-FLX 30%**, total held at
 0.01 FLX/sec. First had to correct the mental model: these three don't share one contract.
@@ -1005,19 +1044,26 @@ end, then push succeeded.
 
 ## Deployed on Robinhood Chain **Testnet** (chainId 46630)
 
-**FLEX generation (2026-07-21) — current.** Everything below was redeployed for the
-RWD → FLEX/FLX rename; see §22 for why a rename forces a full redeploy.
+**Capped-FLX generation (2026-07-22) — current.** Redeployed to give FLX a 10M cap + burn
+(see §29). Only the FLX-touching contracts changed; the WETH→tFLX stake pool and tFLX token
+were KEPT (they never reference FLX).
 
 | What | Address |
 |---|---|
-| MasterChef gen 4 (per-second + `ownerMint`; pid 0 = WETH, pid 1 = WETH-FLEX-LP) | `0x92448e5eC14b969EC0960aa418295dE7a97De417` |
-| RewardToken / **FLEX (FLX)** — farm's mint-on-demand token | `0xc8aF3c4f600469DD1a58B33E3e88e0a749cD312e` |
-| Stake-FLEX pool (WethStakingRewards, FLX↔FLX) | `0x8F02f6B7A05095B43ee2cb64085CAcc578a53CC1` |
-| WethRwdPool (AMM, LP token `WETH-FLEX-LP`, founding liquidity burned) | `0x83715727e023FFb88847B02d98d39f63eD8eb09e` |
-| WethStakingRewards (`/stake`, WETH↔tFLX) | `0x85a2C8703611C68f5c2571428837d56Fb4bbbccD` |
-| TestnetRewardToken / **tFLX** (`/stake`'s reward) | `0xC77b859Ac99fB812386BE76e51dEf57774785ef9` |
+| RewardToken / **FLEX (FLX)** — capped 10M + burnable, farm's token | `0x5DfDdc6A2f551fF659A351D3B1Ef0F73e7c4677E` |
+| MasterChef (per-second + `ownerMint`; pid 0 = WETH, pid 1 = WETH-FLEX-LP) | `0x7b878c0A28E3ee80f6Cc2c269FBc7694785631eD` |
+| WethRwdPool (AMM, LP token `WETH-FLEX-LP`, founding liquidity burned) | `0x07DCF45a260E2fd36D6b17E4A8630aFB4aD03c15` |
+| Stake-FLEX pool (WethStakingRewards, FLX↔FLX) | `0x2a22E11AEf5fDD949b40cCCCc8420f6a34f4aE5c` |
+| **LockedStaking** (lock FLX 1/2/3mo, early-exit 5% burn) | `0xd95BDab4BF3F4A14257774A846e38a88B85e381D` |
+| WethStakingRewards (`/stake`, WETH↔tFLX) — **kept from prev gen** | `0x85a2C8703611C68f5c2571428837d56Fb4bbbccD` |
+| TestnetRewardToken / **tFLX** (`/stake`'s reward) — **kept** | `0xC77b859Ac99fB812386BE76e51dEf57774785ef9` |
 | WETH (testnet — unchanged, not ours) | `0x7943e237c7F95DA44E0301572D358911207852Fa` |
 | Deployer wallet | `0x062B37Ff25204B30936E8b77A5f94EA5eFd2241B` |
+
+**Previous FLEX generation (2026-07-21) — now DEAD** (uncapped/non-burnable FLX, replaced by
+the capped one above): FLX `0xc8aF3c4f...312e`, MasterChef `0x92448e5e...De417`, AMM
+`0x83715727...b09e`, Stake-FLEX `0x8F02f6B7...3CC1`. Balances on these (incl. any liquidity
+the boss added + their 10k FLX) are stranded — re-seeded fresh on the capped generation.
 
 ### Dead contracts (do not point the web app at these)
 

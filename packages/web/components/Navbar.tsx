@@ -19,6 +19,7 @@ const navEntries: NavEntry[] = [
       { href: "/stake", label: "Stake" },
       { href: "/farm", label: "Farm" },
       { href: "/stake-rwd", label: "Stake FLX" },
+      { href: "/lock", label: "Lock FLX" },
     ],
   },
   { href: "/pool", label: "Pool" },

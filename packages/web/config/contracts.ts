@@ -39,6 +39,12 @@ export const CONTRACTS = {
     process.env.NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS,
     "NEXT_PUBLIC_WETH_RWD_POOL_ADDRESS"
   ),
+  // LockedStaking — lock FLX for 1/2/3 months at a tier APR; early exit burns 5% (the
+  // deflationary counterpart to the farm's minting).
+  lockedStaking: requireAddress(
+    process.env.NEXT_PUBLIC_LOCKED_STAKING_ADDRESS,
+    "NEXT_PUBLIC_LOCKED_STAKING_ADDRESS"
+  ),
 };
 
 /** WETH is seeded as pool 0 by scripts/deploy-masterchef.ts. */
