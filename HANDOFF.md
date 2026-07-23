@@ -1228,3 +1228,74 @@ The Chrome-automation window would not shrink below `innerWidth: 732`, so phone 
 tested by resizing. Workaround that did work: temporarily set the page shell's width in-page
 (`shell.style.maxWidth = '358px'`), measure, then restore. That exercises the real CSS at phone
 width without touching the window.
+
+## 31. ⚠️ BEFORE MAINNET — ownership must move to the boss's wallet
+
+**Decision made 2026-07-23 by the project owner. Do not deploy to mainnet without doing this.**
+
+Everything today is owned by the **deployer key that sits in plaintext at
+`packages/contracts/.env`** (`DEPLOYER_PRIVATE_KEY`, address `0x062B37Ff25204B30936E8b77A5f94EA5eFd2241B`).
+That key is not in anyone's MetaMask — it exists only as a file on the dev machine. Acceptable on
+testnet where nothing has value; **unacceptable once real money is involved**, because anyone with
+read access to that machine can mint FLX and drain the admin surface.
+
+Target owner: the boss's wallet **`0xB2FE805A538E05a79a5a37AEc093D0b2a79233e9`** (a real MetaMask
+account — the same one that holds 7,000 FLX and the 3,000 FLX lock position on testnet). A Gnosis
+Safe multisig is strictly better and was recommended; the boss's EOA is the decision on record, so
+treat multisig as an upgrade path, not a blocker.
+
+### The trap: do NOT transfer the FLX token itself
+
+The ownership graph has one non-obvious hop:
+
+```
+deployer key ──owns──> MasterChef ──owns──> FLX token (0x5DfD…677E)
+             ──owns──> LockedStaking, WethStakingRewards, RwdStaking, WethRwdPool, tFLX
+```
+
+`RewardToken.mint()` is `onlyOwner`, and **MasterChef is that owner** — that is how the farm mints
+rewards and how `chef.ownerMint()` works. Transferring the FLX token's ownership to the boss's
+wallet would **break every harvest on the farm** (mint reverts, rewards become unclaimable).
+
+**Transfer these** (the admin contracts):
+
+| Contract | Pattern | Notes |
+|---|---|---|
+| `MasterChef` | `Ownable2Step` | This is the one that matters — it indirectly controls FLX minting |
+| `LockedStaking` | `Ownable2Step` | |
+| `WethRwdPool` | `Ownable2Step` | |
+| `WethStakingRewards` (`/stake`) | **plain `Ownable`** | one-step, irreversible — see below |
+| FLX staking (`/stake-rwd`) | **plain `Ownable`** | one-step, irreversible — see below |
+
+**Do not transfer:** `RewardToken` (FLX) — it must stay owned by `MasterChef`.
+
+### Ownable2Step vs Ownable
+
+`Ownable2Step` contracts need **two** transactions: the current owner calls `transferOwnership(newOwner)`,
+then **the new owner** calls `acceptOwnership()` from their own wallet. Until step 2 lands, nothing
+changes — a typo'd address is harmless.
+
+The two plain-`Ownable` contracts transfer in **one irreversible step**. A wrong address bricks them
+permanently. Either upgrade them to `Ownable2Step` before the transfer, or triple-check the address
+and send a tiny test transaction to it first to prove the boss controls it.
+
+### Mainnet pre-flight checklist
+
+1. Upgrade `RewardToken` + `WethStakingRewards` to `Ownable2Step` (see above), or accept the one-step risk.
+2. Generate a **fresh** mainnet deployer key. **Never reuse `0x062B…241B`** — it has lived in plaintext
+   on a dev machine and passed through many processes; treat it as burned.
+3. Do not put the mainnet key in `.env`. Use a hardware wallet / Hardhat's encrypted keystore, or
+   deploy from the boss's wallet directly.
+4. Deploy, seed liquidity, then `transferOwnership` on all five admin contracts to
+   `0xB2FE805A538E05a79a5a37AEc093D0b2a79233e9`.
+5. Have the boss call `acceptOwnership()` on the three `Ownable2Step` contracts from their MetaMask.
+6. Verify on-chain that `owner()` on all five is the boss's address and that the deployer key controls
+   nothing (the same script pattern used in `HANDOFF.md` §31 discussion — read `owner()` on each address).
+7. Confirm the farm still mints: `MasterChef` must still be `owner()` of the FLX token.
+
+### Side effect the boss actually wants
+
+Once `MasterChef` and the staking contracts are his, `/emissions` stops showing "Copy request" and
+switches to live owner controls for him automatically — the form already checks `owner()` against the
+connected wallet (`isOwnerByTarget` in `EmissionRateRequestForm.tsx`). No code change needed; the
+capability follows the ownership.
