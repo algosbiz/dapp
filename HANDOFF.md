@@ -1299,3 +1299,88 @@ Once `MasterChef` and the staking contracts are his, `/emissions` stops showing 
 switches to live owner controls for him automatically — the form already checks `owner()` against the
 connected wallet (`isOwnerByTarget` in `EmissionRateRequestForm.tsx`). No code change needed; the
 capability follows the ownership.
+
+## 32. Telegram monitoring bot
+
+Read-only bot that reports protocol state and alerts on owner-only actions. **All bot output is
+English** — the person reading it doesn't speak Indonesian. Keep it that way.
+
+No server was added. The webhook is an ordinary Next.js API route, so Telegram pushes each
+message to the existing Vercel deployment and the function exits — the same pattern
+`app/api/flx-price/route.ts` already used.
+
+### Files
+
+| File | Role |
+|---|---|
+| `lib/telegram.ts` | `sendMessage` wrapper, HTML parse mode, chat-id allowlist |
+| `lib/botMetrics.ts` | one flat snapshot of protocol state, read server-side |
+| `lib/botFormat.ts` | all message text (English) |
+| `lib/cronAuth.ts` | `CRON_SECRET` guard shared by the scheduled routes |
+| `app/api/telegram/webhook/route.ts` | commands: `/supply` `/price` `/emission` `/locked` `/report` `/help` |
+| `app/api/cron/daily-report/route.ts` | daily digest |
+| `app/api/cron/alerts/route.ts` | security/activity event sweep |
+| `packages/web/vercel.json` | daily-report cron (08:00 UTC) |
+| `.github/workflows/flex-alerts.yml` | 10-minute alert sweep |
+
+Both cron routes accept `?dry=1` to return the composed message as JSON without sending — use it
+to check numbers and wording without spamming the chat.
+
+### Env vars to add (Vercel)
+
+| Name | Notes |
+|---|---|
+| `TELEGRAM_BOT_TOKEN` | from @BotFather |
+| `TELEGRAM_CHAT_ID` | destination chat; groups are negative numbers |
+| `TELEGRAM_ALLOWED_CHAT_IDS` | optional, comma-separated extras |
+| `TELEGRAM_WEBHOOK_SECRET` | any random string; echoed by Telegram to prove a request is real |
+| `CRON_SECRET` | any random string; guards the scheduled routes |
+
+Every route degrades gracefully when these are unset — routes answer "not configured" rather
+than throwing, so the app builds and deploys fine before the token exists.
+
+Register the webhook once after deploying (replace both placeholders):
+
+```
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<your-app>.vercel.app/api/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+### Why alerting isn't a Vercel cron
+
+Vercel's Hobby plan runs cron jobs **at most once per day**. That's fine for the digest and
+useless for "tell me within minutes if someone took my contracts", so the alert sweep runs from
+GitHub Actions (free, every 10 min) against the same endpoint. Needs repo secrets
+`FLEX_SITE_URL` and `FLEX_CRON_SECRET`. On a Vercel Pro plan, delete the workflow and move the
+schedule into `vercel.json`.
+
+### Two deliberate design decisions
+
+**Lookback window, not a cursor.** Serverless has nowhere to persist "last block scanned" — the
+filesystem is read-only and there's no database. Each sweep scans a 15-minute window on a
+10-minute cadence, so the overlap can occasionally repeat an alert. That is the intended trade:
+a duplicate security alert is an annoyance, a missed one defeats the feature. Fix with a KV
+store if it ever matters, not a shorter window.
+
+**Deployment events are downgraded.** Every OpenZeppelin `Ownable` constructor emits
+`OwnershipTransferred(0x0 → initialOwner)`. Reported as a takeover, one redeploy fires six red
+"act now" alarms about contracts that were just created — and alert fatigue is precisely how the
+one real alert gets scrolled past. `previousOwner == 0x0` is therefore reported calmly as
+"Contract deployed"; everything else stays a red alarm.
+
+### Gotchas
+
+- **`vercel.json` lives in `packages/web/`**, matching a Vercel "Root Directory" of `packages/web`.
+  If the project root is ever set to the repo root, the file must move or the cron won't register.
+- **The emission split is a percentage of all three pools, not of the farm.** The FLX→FLX pool is
+  a separate contract with its own budget and isn't in MasterChef's `totalAllocPoint`, so dividing
+  by the farm-only total prints 14/86 instead of the agreed 10/60/30. `emissionSection` divides by
+  the sum of all three.
+- **`snapshot-supply.ts` still says "totalSupply() only ever grows".** That comment predates the
+  capped/burnable FLX and is now wrong — `LockedStaking` burns the early-exit penalty. The bot
+  reads mint and burn separately from `Transfer` events at the zero address for this reason; the
+  older snapshot script has not been updated.
+
+### Verified against the live chain
+
+The 24h/48h sweep found four `OwnerMint` events totalling 3,000 + 1,814.4 + 20,000 + 10,000 =
+**34,814.4 FLX**, exactly matching `totalSupply()`. Emission renders 10% / 60% / 30% as agreed.

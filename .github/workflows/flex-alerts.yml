@@ -1,0 +1,41 @@
+# Frequent security-alert sweep for the $FLEX Telegram bot.
+#
+# Why this isn't a Vercel Cron like the daily report: Vercel's Hobby plan runs cron jobs at
+# most once per day, which is useless for "tell me within minutes if someone took ownership
+# of my contracts". GitHub Actions schedules are free and run every few minutes, so the
+# alerting half lives here while the daily digest stays on Vercel.
+#
+# If the project moves to a Vercel Pro plan, this workflow can be deleted and the schedule
+# added to packages/web/vercel.json instead.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   FLEX_SITE_URL  — deployment origin, e.g. https://your-app.vercel.app  (no trailing slash)
+#   FLEX_CRON_SECRET — same value as the CRON_SECRET env var in Vercel
+#
+# Note: GitHub's scheduler is best-effort and runs late under load. That's acceptable here —
+# the endpoint scans a 15-minute lookback window, so a late run still catches what happened.
+
+name: FLEX alerts
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: # lets you trigger a sweep by hand from the Actions tab
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger alert scan
+        env:
+          SITE_URL: ${{ secrets.FLEX_SITE_URL }}
+          CRON_SECRET: ${{ secrets.FLEX_CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ]; then
+            echo "FLEX_SITE_URL secret is not set — skipping."
+            exit 0
+          fi
+          # --fail-with-body so a 401/500 fails the job loudly instead of passing silently.
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/alerts"
