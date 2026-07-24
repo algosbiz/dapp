@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { NetworkGlobe } from "@/components/landing/NetworkGlobe";
+import { BrandEmblem } from "@/components/landing/BrandEmblem";
 
 export function Hero() {
   return (
@@ -49,11 +49,10 @@ export function Hero() {
           </ul>
         </div>
 
-        {/* Right — the network itself, as an object you can push around.
-            No `justify-self-end` here: that shrink-wraps the grid item to its content, which
-            capped the globe at ~300px inside a ~520px column. Default stretch lets it fill. */}
+        {/* Right — the $FLEX brand emblem, shown large. No `justify-self-end`: that shrink-wraps
+            the grid item to its content; default stretch lets the emblem centre in its column. */}
         <div className="w-full">
-          <NetworkGlobe />
+          <BrandEmblem />
         </div>
       </div>
     </section>

@@ -55,7 +55,7 @@ export function FarmDashboard() {
       <div className="rounded-card bg-canvas p-6 shadow-card">
         <p className="text-sm font-semibold text-ink-body">APR (est.)</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{formatAprDisplay(apr)}</p>
-        <p className="mt-1 text-xs text-ink-body">Based on the current /pool price &amp; TVL — moves as both change.</p>
+        <p className="mt-1 text-xs text-ink-body">Based on the current pool price &amp; TVL — moves as both change.</p>
       </div>
     </div>
   );

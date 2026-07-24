@@ -9,7 +9,7 @@ import { fetchEthUsdPrice } from "@/lib/price";
  * The single source of truth for "what is 1 FLX worth in USD".
  *
  * Exists as a server route rather than being computed in each component for two reasons:
- * the navbar pill and the /pool spot-price tile MUST agree (a visitor seeing two different
+ * the navbar pill and the pool spot-price tile MUST agree (a visitor seeing two different
  * FLX prices on one screen is exactly the confusion this endpoint was created to end), and
  * the ETH/USD leg is a rate-limited public API that shouldn't be called once per browser.
  * Computing both legs here means one cached read serves every surface.

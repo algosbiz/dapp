@@ -18,15 +18,13 @@ const navEntries: NavEntry[] = [
     items: [
       { href: "/stake", label: "Stake" },
       { href: "/farm", label: "Farm" },
-      { href: "/stake-rwd", label: "Stake FLX" },
-      { href: "/lock", label: "Lock FLX" },
+      { href: "/lock", label: "Lock" },
     ],
   },
-  { href: "/pool", label: "Pool" },
   {
     label: "More",
     items: [
-      { href: "/tokenomics", label: "Tokenomics" },
+      // Tokenomics hidden from nav per request — page still lives at /tokenomics.
       { href: "/emissions", label: "Emissions" },
       { href: "/#security", label: "Security" },
     ],

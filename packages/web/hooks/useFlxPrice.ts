@@ -12,7 +12,7 @@ export type FlxPrice = {
 
 /**
  * Reads the shared price endpoint so every surface showing an FLX price shows the same one.
- * Deliberately not a per-component calculation: the navbar pill and the /pool tile disagreeing
+ * Deliberately not a per-component calculation: the navbar pill and the pool tile disagreeing
  * is the exact problem this replaced.
  */
 export function useFlxPrice() {

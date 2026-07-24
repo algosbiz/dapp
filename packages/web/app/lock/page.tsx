@@ -23,9 +23,9 @@ export default function LockPage() {
           Lock FLX
         </h1>
         <p className="mt-2 text-pretty text-base leading-relaxed text-ink-body">
-          Commit your FLX for 1, 2, or 3 months and earn more FLX — longer locks earn a higher
-          rate. Leaving before the term ends burns 5% of your stake forever, so this is the one
-          place FLX supply can go <em>down</em>: the mirror image of the farm&apos;s minting.
+          Commit your FLX from 48 hours up to 3 months and earn more FLX — longer locks earn a
+          higher rate. Leaving before the term ends burns 5% of your stake forever, so this is the
+          one place FLX supply can go <em>down</em>: the mirror image of the farm&apos;s minting.
         </p>
       </header>
 

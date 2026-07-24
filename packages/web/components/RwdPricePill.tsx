@@ -3,7 +3,7 @@
 import { formatUsdPrice, useFlxPrice } from "@/hooks/useFlxPrice";
 
 /**
- * FLX price in the navbar. Reads the same `/api/flx-price` endpoint as the /pool spot-price
+ * FLX price in the navbar. Reads the same `/api/flx-price` endpoint as the pool spot-price
  * tile so the two can never disagree — they previously did, because this pill was a hardcoded
  * $0.05 placeholder from before FLX had a pool at all, roughly 260x the real derived price.
  *

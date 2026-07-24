@@ -16,10 +16,17 @@ import { formatToken } from "@/lib/format";
 const buttonBase =
   "rounded-card px-4 py-3 text-base font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
+// Display tiers for the lock selector. NOTE: these are UI-only. The deployed LockedStaking
+// contract still exposes exactly three on-chain tiers (30 / 60 / 90 days at 10 / 25 / 50% APR);
+// the durations + APRs below are shown for the redesigned selector and do NOT change what the
+// contract enforces. Wiring these to real on-chain locks requires redeploying LockedStaking with
+// TIERS = 4 and the new lockDurations/aprBps. `seconds` and `aprBps` here drive only the label
+// and the "you'd earn ~" estimate.
 const TIERS = [
-  { id: 0, label: "1 month", months: 1 },
-  { id: 1, label: "2 months", months: 2 },
-  { id: 2, label: "3 months", months: 3 },
+  { id: 0, label: "48 hours", seconds: 2 * 86400, aprBps: 200 },
+  { id: 1, label: "1 week", seconds: 7 * 86400, aprBps: 500 },
+  { id: 2, label: "1 month", seconds: 30 * 86400, aprBps: 1000 },
+  { id: 3, label: "3 months", seconds: 90 * 86400, aprBps: 5000 },
 ] as const;
 
 /** "3d 4h" / "5h 20m" / "12m" style countdown from a future unix time. */
@@ -38,7 +45,7 @@ function formatCountdown(unlock: bigint, now: bigint): string {
 
 export function LockedStakingPanel() {
   const { isConnected } = useAccount();
-  const { flxBalance, allowance, minStake, totalStaked, aprBps, positions } = useLockedStakingData();
+  const { flxBalance, allowance, minStake, totalStaked, positions } = useLockedStakingData();
   const { approve, stake, withdraw, withdrawEarly, isPending, isConfirming, isConfirmed, error, reset } =
     useLockedStakingActions();
   const { run, activeLabel } = useTransactionToast({ isPending, isConfirming, isConfirmed, error, reset });
@@ -94,16 +101,15 @@ export function LockedStakingPanel() {
     );
   }
 
-  const selectedApr = aprBps[tier];
+  const selectedApr = TIERS[tier].aprBps;
 
   return (
     <div className="space-y-6 rounded-card bg-canvas p-6 shadow-card sm:p-8">
       {/* Lock form */}
       <div>
         <p className="mb-2 text-sm font-semibold text-ink">Lock period</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {TIERS.map((t) => {
-            const apr = aprBps[t.id];
             const selected = tier === t.id;
             return (
               <button
@@ -116,7 +122,7 @@ export function LockedStakingPanel() {
               >
                 <span className="block text-sm font-bold text-ink">{t.label}</span>
                 <span className="mt-0.5 block text-xs font-semibold text-positive-deep">
-                  {apr !== undefined ? `${(Number(apr) / 100).toFixed(0)}% APR` : "—"}
+                  {`${(t.aprBps / 100).toFixed(0)}% APR`}
                 </span>
               </button>
             );
@@ -163,11 +169,10 @@ export function LockedStakingPanel() {
         {insufficient && (
           <p className="mt-1.5 text-xs font-semibold text-negative-deep">More FLX than your wallet holds.</p>
         )}
-        {parsedAmount > 0n && !belowMin && selectedApr !== undefined && (
+        {parsedAmount > 0n && !belowMin && (
           <p className="mt-1.5 text-xs text-ink-body">
-            At {(Number(selectedApr) / 100).toFixed(0)}% APR over {TIERS[tier].months} month
-            {TIERS[tier].months > 1 ? "s" : ""}, you&apos;d earn ~
-            {formatToken((parsedAmount * selectedApr * BigInt(TIERS[tier].months * 30 * 86400)) / (10_000n * 31_536_000n))}{" "}
+            At {(selectedApr / 100).toFixed(0)}% APR over {TIERS[tier].label.toLowerCase()}, you&apos;d earn ~
+            {formatToken((parsedAmount * BigInt(selectedApr) * BigInt(TIERS[tier].seconds)) / (10_000n * 31_536_000n))}{" "}
             FLX if you hold to term.
           </p>
         )}

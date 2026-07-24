@@ -50,6 +50,21 @@ body {
     7px 7px 0 #c5edab;
 }
 
+/* The hero emblem drifts up and down so the logo has a little life where the interactive globe
+   used to be. Transform-only, so it's cheap; the reduced-motion block below stills it. */
+@keyframes emblem-float {
+  0%,
+  100% {
+    transform: translateY(-2%);
+  }
+  50% {
+    transform: translateY(2%);
+  }
+}
+.brand-emblem-float {
+  animation: emblem-float 6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { FarmDashboard } from "@/components/FarmDashboard";
 import { FarmPanel } from "@/components/FarmPanel";
+import { LiquidityPanel } from "@/components/LiquidityPanel";
 import { LpFarmDashboard } from "@/components/LpFarmDashboard";
 import { LpFarmPanel } from "@/components/LpFarmPanel";
+import { PoolPanel } from "@/components/PoolPanel";
 import { SupplyPanel } from "@/components/SupplyPanel";
+import { SwapPanel } from "@/components/SwapPanel";
 
 export const metadata = {
   title: "Farm | $FLEX Staking",
@@ -44,11 +47,11 @@ export default function FarmPage() {
             LP farm
           </h2>
           <p className="mt-1 text-sm text-ink-body">
-            Stake WETH-FLEX-LP tokens (from adding liquidity on the{" "}
-            <Link href="/pool" className="font-semibold text-positive hover:text-positive-deep">
-              Pool page
-            </Link>
-            ) to earn FLX from the same farm.
+            Stake WETH-FLEX-LP tokens (from adding liquidity in the{" "}
+            <a href="#pool" className="font-semibold text-positive hover:text-positive-deep">
+              pool section
+            </a>{" "}
+            below) to earn FLX from the same farm.
           </p>
           <div className="mt-4 space-y-6">
             <LpFarmDashboard />
@@ -66,6 +69,22 @@ export default function FarmPage() {
           </p>
           <div className="mt-4">
             <SupplyPanel />
+          </div>
+        </div>
+
+        <div id="pool" className="scroll-mt-20">
+          <h2 className="font-display text-lg font-extrabold tracking-tight text-ink">
+            WETH / FLX pool
+          </h2>
+          <p className="mt-1 text-sm text-ink-body">
+            The constant-product pool that gives FLX its market price. Swap WETH and FLX, or add
+            liquidity to receive WETH-FLEX-LP tokens you can stake in the LP farm above. Founding
+            liquidity was permanently burned — nobody, including the team, can withdraw it.
+          </p>
+          <div className="mt-4 space-y-6">
+            <PoolPanel />
+            <SwapPanel />
+            <LiquidityPanel />
           </div>
         </div>
       </div>
